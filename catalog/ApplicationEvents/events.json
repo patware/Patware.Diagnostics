@@ -1,0 +1,158 @@
+{
+  "Categories": {
+    "Application": {
+      "Name": "Application",
+      "Summary": "Events that are related to the lifetime of the application, like starting, pausing, stopped.  A typical app's lifecycle will be: Starting -> Started [-> Pausing -> Paused [-> Resuming -> Resumed]] -> Stopping -> Stopped."
+    }
+  },
+  "Ids": {
+    "101": {
+      "EventId": 101,
+      "EventName": "Application_Starting",
+      "Category": "Application",
+      "Method": "Starting",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is starting.",
+      "Arguments": [],
+      "Summary": "Indicates that application initialization is beginning.",
+      "Trigger": "Emit immediately before beginning application initialization.",
+      "Remarks": [
+        "Framework or bootstrap logging may occur before this event; it does not guarantee that it is the first log record in the process.",
+        "Command-line arguments are excluded because they may contain sensitive information."
+      ],
+      "Status": "Proposed",
+      "Since": null
+    },
+    "102": {
+      "EventId": 102,
+      "EventName": "Application_Started",
+      "Category": "Application",
+      "Method": "Started",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Started.  Elapsed: {TotalMilliseconds} milliseconds",
+      "Arguments": [
+        {
+          "Name": "totalMilliseconds",
+          "ValueType": "double",
+          "Summary": "The elapsed time, in milliseconds, from the beginning of application initialization until startup completes."
+        }
+      ],
+      "Summary": "Indicates that application initialization completed successfully and the application is ready to begin its intended work.",
+      "Trigger": "Emit after all initialization required for the application to begin its intended work has completed successfully.",
+      "Remarks": [
+        "Measure totalMilliseconds from the beginning of initialization represented by Application_Starting to successful completion represented by this event.",
+        "The caller supplies the elapsed duration; the logging method does not start or stop a timer.",
+        "Successful startup does not guarantee that every optional dependency is healthy."
+      ],
+      "Status": "Proposed",
+      "Since": null
+
+    },
+    "103": {
+      "EventId": 103,
+      "EventName": "Application_Stopping",
+      "Category": "Application",
+      "Method": "Stopping",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is stopping.  Reason: {Reason}",
+      "Arguments": [
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": "A non-sensitive description of the shutdown cause, or 'Unknown' when the cause is unavailable."
+        }
+      ],
+      "Summary": "Indicates that application shutdown is beginning.",
+      "Trigger": "Emit when application shutdown begins, before performing shutdown cleanup.",
+      "Remarks": [
+        "The reason describes the known cause of shutdown. Use 'Unknown' when the cause is unavailable rather than inferring one.",
+        "This event indicates that shutdown has begun, not that cleanup has completed."
+      ],
+      "Status": "Proposed",
+      "Since": null
+    },
+    "104": {
+      "EventId": 104,
+      "EventName": "Application_Stopped",
+      "Category": "Application",
+      "Method": "Stopped",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Stopped",
+      "Arguments": [],
+      "Summary": "Indicates that application shutdown cleanup has completed.",
+      "Trigger": "Emit after application shutdown cleanup completes, while logging remains available.",
+      "Remarks": [
+        "This event describes completion of application shutdown cleanup; it does not prove that the operating-system process has exited.",
+        "Abrupt termination may prevent this event from being emitted."
+      ],
+      "Status": "Proposed",
+      "Since": null
+    }
+  },
+  "LogClass": {
+    "LowLevel": {
+      "Name": "LowLevel",
+      "No": 1,
+      "Summary": "Positive, low-level lifecycle related app events like Start, Pause, Stop, reading Configuration/Settings, Dependency initialization - Application plumbing, no intervention required by anyone"
+    },
+    "OperationalInformation": {
+      "Name": "OperationalInformation",
+      "No": 2,
+      "Summary": "Positive, normal run, expected, operational events like calling an external service, running diagnostics -  No intervention required by anyone"
+    },
+    "OperationalWarning": {
+      "Name": "OperationalWarning",
+      "No": 3,
+      "Summary": "Normal, run, expected, operational warning like when an app is switching to InMaintenance, when a diagnostic test failed validation, or there's a mismatch of version.  - No immediate intervention required by anyone, but should be investigated anyhow."
+    },
+    "RecoverableWarning": {
+      "Name": "RecoverableWarning",
+      "No": 4,
+      "Summary": "Internal, recoverable problems, where the app can continue to work but with limited functionality, like the app is running in DegradedMode, the app has the ability to recover from the incident.  Admin intervention is not a necessity but is a good idea to monitor the situation."
+    },
+    "UnrecoverableWarning": {
+      "Name": "UnrecoverableWarning",
+      "No": 5,
+      "Summary": "Internal, unrecoverable problems, like un-usable configuration, failed authentication/authorization to a service, the app can continue to work but with limited functionality, and an intervention by an admin is required."
+    },
+    "Exceptional": {
+      "Name": "Exceptional",
+      "No": 6,
+      "Summary": "External, out of our control incidents, like timeouts/unavailable external systems, missing dependency that prevents the app from running.  Immediate intervention by an administrator is required.  Let's be clear, Exceptional doesn't mean so good it's exceptional, it's the opposite."
+    },
+    "Catastrophic": {
+      "Name": "Catastrophic",
+      "No": 7,
+      "Summary": "Catastrophic, unplanned, unrecoverable, unexpected. boom!"
+    }
+  },
+  "Related": {
+    "Ing_Ed" : [
+      {
+        "Ing": "101",
+        "Ed": "102",
+        "Fails": []
+      },
+      {
+        "Ing": "103",
+        "Ed": "104",
+        "Fails": []
+      }
+    ],
+    "Lifecycle":[
+      {
+        "Name" : "Application",
+        "States" : [
+          "101",
+          "102",
+          "103",
+          "104"
+        ]
+      }
+    ]
+  }
+}

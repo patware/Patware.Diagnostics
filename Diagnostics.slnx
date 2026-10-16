@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/libraries/" />
+  <Folder Name="/libraries/ApplicationEvents/">
+    <Project Path="src/ApplicationEvents/ApplicationEvents.Core/ApplicationEvents.Core.csproj" />
+  </Folder>
+  <Folder Name="/libraries/Metrics/">
+    <Project Path="src/Metrics/Metrics.Core/Metrics.Core.csproj" />
+  </Folder>
+  <Folder Name="/SampleApplications/">
+    <Project Path="SampleApplications/SampleConsole/SampleConsole.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="CHANGELOG.md" />
+    <File Path="VERSION" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/ApplicationEvents/">
+    <Project Path="tests/ApplicationEvents/ApplicationEvents.Core.Tests/ApplicationEvents.Core.Tests.csproj" Id="a2b2ae33-c8d1-414e-936e-3e8444c5868e" />
+  </Folder>
+  <Folder Name="/tests/Metrics/" />
+</Solution>
