@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Application event catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["Categories", "Ids", "LogClass", "Related"],
+  "properties": {
+    "Categories": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/category"
+      }
+    },
+    "Ids": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[1-9][0-9]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "LogClass": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/eventClass"
+      }
+    },
+    "Related": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Ing_Ed", "Lifecycle"],
+      "properties": {
+        "Ing_Ed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["Ing", "Ed", "Fails"],
+            "properties": {
+              "Ing": { "$ref": "#/$defs/eventReference" },
+              "Ed": { "$ref": "#/$defs/eventReference" },
+              "Fails": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/eventReference" }
+              }
+            }
+          }
+        },
+        "Lifecycle": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["Name", "States"],
+            "properties": {
+              "Name": { "$ref": "#/$defs/text" },
+              "States": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/eventReference" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": {
+      "type": "string",
+      "pattern": "\\S",
+      "not": {
+        "pattern": "^\\s*TODO\\s*$"
+      }
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9_]*$"
+    },
+    "eventReference": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Name", "Summary"],
+      "properties": {
+        "Name": { "$ref": "#/$defs/identifier" },
+        "Summary": { "$ref": "#/$defs/text" }
+      }
+    },
+    "eventClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Name", "No", "Summary"],
+      "properties": {
+        "Name": { "$ref": "#/$defs/identifier" },
+        "No": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "Summary": { "$ref": "#/$defs/text" }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Name", "ValueType", "Summary"],
+      "properties": {
+        "Name": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*$",
+          "not": { "const": "logger" }
+        },
+        "ValueType": {
+          "enum": ["string", "double"]
+        },
+        "Summary": { "$ref": "#/$defs/text" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "EventId",
+        "EventName",
+        "Category",
+        "Method",
+        "EventClass",
+        "LogLevel",
+        "Message",
+        "Arguments",
+        "Summary",
+        "Trigger",
+        "Remarks",
+        "Status",
+        "Since"
+      ],
+      "properties": {
+        "EventId": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 799
+        },
+        "EventName": { "$ref": "#/$defs/identifier" },
+        "Category": { "$ref": "#/$defs/identifier" },
+        "Method": { "$ref": "#/$defs/identifier" },
+        "EventClass": { "$ref": "#/$defs/identifier" },
+        "LogLevel": {
+          "enum": [
+            "Trace",
+            "Debug",
+            "Information",
+            "Warning",
+            "Error",
+            "Critical"
+          ]
+        },
+        "Message": { "$ref": "#/$defs/text" },
+        "Arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "Summary": { "$ref": "#/$defs/text" },
+        "Trigger": { "$ref": "#/$defs/text" },
+        "Remarks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/text" }
+        },
+        "Status": {
+          "enum": ["Proposed", "Stable", "Deprecated", "Retired"]
+        },
+        "Since": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "Status": {
+                "enum": ["Stable", "Deprecated", "Retired"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "Since": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

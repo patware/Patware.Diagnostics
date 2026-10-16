@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/SampleApplications/">
     <Project Path="SampleApplications/SampleConsole/SampleConsole.csproj" />
+    <Project Path="SampleApplications/SampleManualEventsConsole/SampleManualEventsConsole.csproj" Id="f2aa6324-2d85-4810-94c2-deeeda26d172" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
