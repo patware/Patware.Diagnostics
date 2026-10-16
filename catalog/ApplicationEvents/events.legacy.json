@@ -1,0 +1,1036 @@
+{
+  "Categories": {
+    "Application": {
+      "Name": "Application",
+      "Summary": "Events that are related to the lifetime of the application, like starting, pausing, stopped.  A typical app's lifecycle will be: Starting -> Started [-> Pausing -> Paused [-> Resuming -> Resumed]] -> Stopping -> Stopped."
+    },
+    "Dependency": {
+      "Name": "Dependency",
+      "Summary": "Events an application would raise during the Dependency Injection phase.  Notice that there are 3 VersionMismatch events: VersionMismatch, VersionMismatchedDegradedMode and VersionMismatchedShuttingDown: VersionMismatch is for apps that don't have fall back plan but the app can continue with limited functionality, VersionMismatchedDegradedMode is for apps that can work with a fall back plan, like a local only implementation of a service until the external service is resumed, and VersionMismatchedShuttingDown is when the app can't continue at all."
+    },
+    "Logging": {
+      "Name": "Logging",
+      "Summary": "Ironic, logging about logging.  Logging specific events.  Typical logging lifecycle: Initialized -> Started -> Stopped"
+    },
+    "Configuration": {
+      "Name": "Configuration",
+      "Summary": "Log entries/events about Configuration, like reading and validating configuration and settings.  Typical lifecycle of Configuration: Reading [-> Validating -> IsValid | NotVerifiable] -> Unusable."
+    },
+    "External": {
+      "Name": "External",
+      "Summary": "Calls to external systems, like database, services, urls and files/folders, local or remote.  The difference between ConnectingTo and Calling are important - ConnectingTo/ConnectedTo is for systems that keep an open connection to a service, like SqlConnection or two way communications framework like SignalR, gRPC.  Calling on the other hand is the actual call to consume the service it's connected to.  In some situation, there are no persistent connection and the ConnectingTo/ConnectedTo aren't used.  Typical lifecycle of External: ConnectingTo -> ConnectedTo."
+    },
+    "Diagnostics": {
+      "Name": "Diagnostics",
+      "Summary": "Events that are specialized in Diagnostics like Smoke testing, Tracing and Health verification.  Smoke Testing, from Electronics field is the simplest form of validation and is to verify that the app can start and answer a call.  The Tracing tests are used to verify that the external dependencies the app is using are the ones that are expected.  The Health check is more in-depth and complete and similar to self-diagnostics, and would involve running simulations that includes external services."
+    }
+  },
+  "Ids": {
+    "101": {
+      "EventId": 101,
+      "Category": "Application",
+      "Method": "Starting",
+      "Summary": "The first entry your application should log, marking the start of a great journey.",
+      "FullyQualifiedMethodName": "Application_Starting",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is starting.  Args: {args}",
+      "Arguments": [
+        {
+          "Name": "args",
+          "ValueType": "string[]",
+          "Summary": ""
+        }
+      ]
+    },
+    "102": {
+      "EventId": 102,
+      "Category": "Application",
+      "Method": "Started",
+      "Summary": "The initializing, loading, configuration, validation has been done and the application is now fully ready to welcome customers and process requests",
+      "FullyQualifiedMethodName": "Application_Started",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Started.  Elapsed: {totalMilliseconds} milliseconds",
+      "Arguments": [
+        {
+          "Name": "totalMilliseconds",
+          "ValueType": "double",
+          "Summary": ""
+        }
+      ]
+    },
+    "103": {
+      "EventId": 103,
+      "Category": "Application",
+      "Method": "Stopping",
+      "Summary": "All good things come to an end, this entry marks the beginning of the end, locks the front door, puts the closed sign and cleans up.",
+      "FullyQualifiedMethodName": "Application_Stopping",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is stopping.  Reason: {reason}",
+      "Arguments": [
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "104": {
+      "EventId": 104,
+      "Category": "Application",
+      "Method": "Stopped",
+      "Summary": "Lights are closed, you look back and smile, good night.",
+      "FullyQualifiedMethodName": "Application_Stopped",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Stopped",
+      "Arguments": []
+    },
+    "105": {
+      "EventId": 105,
+      "Category": "Application",
+      "Method": "Pausing",
+      "Summary": "Someone or something had enough, and every needs to take a break, so stop what you're doing and listen up.",
+      "FullyQualifiedMethodName": "Application_Pausing",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is pausing.  Reason: {reason}",
+      "Arguments": [
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "106": {
+      "EventId": 106,
+      "Category": "Application",
+      "Method": "Paused",
+      "Summary": "Everyone has paused their activity, here are your instructions.",
+      "FullyQualifiedMethodName": "Application_Paused",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Paused",
+      "Arguments": []
+    },
+    "107": {
+      "EventId": 107,
+      "Category": "Application",
+      "Method": "Resuming",
+      "Summary": "No more questions?  Back to work Edward!",
+      "FullyQualifiedMethodName": "Application_Resuming",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Resuming",
+      "Arguments": []
+    },
+    "108": {
+      "EventId": 108,
+      "Category": "Application",
+      "Method": "Resumed",
+      "Summary": "Back in the saddle again, work has resumed as normal.",
+      "FullyQualifiedMethodName": "Application_Resumed",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Application is Resumed",
+      "Arguments": []
+    },
+    "109": {
+      "EventId": 109,
+      "Category": "Configuration",
+      "Method": "Reading",
+      "Summary": "Configuration has been dormant for a long time and needs to be re-hydrated.",
+      "FullyQualifiedMethodName": "Configuration_Reading",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Reading Configuration",
+      "Arguments": []
+    },
+    "110": {
+      "EventId": 110,
+      "Category": "Configuration",
+      "Method": "Validating",
+      "Summary": "We have the values from the configuration, but are they any good?  Test time.",
+      "FullyQualifiedMethodName": "Configuration_Validating",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Validating Configuration {friendlyName}",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "The friendly name of the configuration"
+        }
+      ]
+    },
+    "111": {
+      "EventId": 111,
+      "Category": "Configuration",
+      "Method": "ValueIsValid",
+      "Summary": "The values from the configuration are useable and valid.  Well, they smell good.",
+      "FullyQualifiedMethodName": "Configuration_ValueIsValid",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Configuration value for {friendlyName} is IsValid",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "The friendly name of the configuration setting"
+        }
+      ]
+    },
+    "112": {
+      "EventId": 112,
+      "Category": "Configuration",
+      "Method": "ReadingConnectionString",
+      "Summary": "Connection strings can be stored using a different configuration mechanism.",
+      "FullyQualifiedMethodName": "Configuration_ReadingConnectionString",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Reading ConnectionString. name: {name}",
+      "Arguments": [
+        {
+          "Name": "Name",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "113": {
+      "EventId": 113,
+      "Category": "Configuration",
+      "Method": "VerifyingConnectionString",
+      "Summary": "Having a connection string doesn't mean it's useable, another taste test.",
+      "FullyQualifiedMethodName": "Configuration_VerifyingConnectionString",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Verifying ConnectionString. name: {name}, connectionString: {connectionString}",
+      "Arguments": [
+        {
+          "Name": "Name",
+          "ValueType": "string",
+          "Summary": ""
+        },
+        {
+          "Name": "connectionString",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "114": {
+      "EventId": 114,
+      "Category": "Configuration",
+      "Method": "ConnectionStringIsValid",
+      "Summary": "A connection to the database was successful",
+      "FullyQualifiedMethodName": "Configuration_ConnectionStringIsValid",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "ConnectionString {name} is valid",
+      "Arguments": [
+        {
+          "Name": "Name",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "115": {
+      "EventId": 115,
+      "Category": "Dependency",
+      "Method": "Loading",
+      "Summary": "Good applications practice IoC/Inversion of Control by leveraging the power of a Dependency Injection framework.  This event marks the start of the Dependency Injection setup.",
+      "FullyQualifiedMethodName": "Dependency_Loading",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Resolving and loading dependencies",
+      "Arguments": []
+    },
+    "116": {
+      "EventId": 116,
+      "Category": "Dependency",
+      "Method": "Resolved",
+      "Summary": "Alright, all dependencies have been resolved, loaded, configured, verified and validated.",
+      "FullyQualifiedMethodName": "Dependency_Resolved",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "All dependencies are resolved",
+      "Arguments": []
+    },
+    "117": {
+      "EventId": 117,
+      "Category": "Logging",
+      "Method": "Initialized",
+      "Summary": "Logging has been initialized and this should entry should mark the last entry that targets the hard coded target.",
+      "FullyQualifiedMethodName": "Logging_Initialized",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Logging is initialized and switching to the official target(s): {targets}",
+      "Arguments": [
+        {
+          "Name": "targets",
+          "ValueType": "string[]",
+          "Summary": "friendly name of targets where the official log entries should end up: file name/path, Windows Event Log, etc."
+        }
+      ]
+    },
+    "118": {
+      "EventId": 118,
+      "Category": "Logging",
+      "Method": "Started",
+      "Summary": "Marks the beginning of logging.",
+      "Remarks": ["Isn't it ironic, don't you think?  A log entry about logging."
+        , "Actually, this is a very special log entry.  Before this entry, all log entries were not going to a hard coded/default log destination because configuration wasn't yet loaded, dependency injection hasn't occurred yet either, so the logging wasn't fully and correctly setup/configured.  This entry is the first event that goes to the configured target logging destination."],
+      "FullyQualifiedMethodName": "Logging_Started",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Logging started",
+      "Arguments": []
+    },
+    "119": {
+      "EventId": 119,
+      "Category": "Logging",
+      "Method": "Stopped",
+      "Summary": "From here on, log entries won't end up to the official targets but in the hard coded/default targets.  There can be subsequent log entries, but they won't be shown in the official logging targets.",
+      "FullyQualifiedMethodName": "Logging_Stopped",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Logging stopped",
+      "Arguments": []
+    },
+    "201": {
+      "EventId": 201,
+      "Category": "External",
+      "Method": "ConnectingTo",
+      "Summary": "The application is connecting to the external system.",
+      "Remarks": [
+        "Don't confuse Connecting vs Calling.  Calling is calling the external system's method/function, Connecting is typical of target systems that needs to be connected before being used/called, systems that have a certain keep-alive mechanism, authentication or two-way communication, like Sql Connection and SignalR"
+      ],
+      "FullyQualifiedMethodName": "External_ConnectingTo",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Connecting to External. Name: {externalName}, uri {uri}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the external system."
+        },
+        {
+          "Name": "uri",
+          "ValueType": "string",
+          "Summary": "the actual uri of the external system."
+        }
+      ]
+    },
+    "202": {
+      "EventId": 202,
+      "Category": "External",
+      "Method": "ConnectedTo",
+      "Summary": "A successful connection has been created with the target system.",
+      "FullyQualifiedMethodName": "External_ConnectedTo",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Connecting to External. Name: {externalName}, uri {uri}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": ""
+        },
+        {
+          "Name": "uri",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "203": {
+      "EventId": 203,
+      "Category": "External",
+      "Method": "Calling",
+      "Summary": "Calling the external target system's method/function",
+      "FullyQualifiedMethodName": "External_Calling",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Calling external {externalName} uri {uri}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the external target system"
+        },
+        {
+          "Name": "uri",
+          "ValueType": "string",
+          "Summary": "actual name of the external target system"
+        }
+      ]
+    },
+    "204": {
+      "EventId": 204,
+      "Category": "Application",
+      "Method": "InNormalMode",
+      "Summary": "Indicates that, according to self diagnostics and the best of knowledge, the application is running normally.",
+      "FullyQualifiedMethodName": "Application_InNormalMode",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Application is running in Normal Mode",
+      "Arguments": []
+    },
+    "205": {
+      "EventId": 205,
+      "Category": "Diagnostics",
+      "Method": "Pong",
+      "Summary": "Just like the HTTP verb HEAD, indicates a \"Ping\" method has been issued and the application is responding with a \"Pong\" indicating it's alive, kicking and ready to roll.",
+      "FullyQualifiedMethodName": "Diagnostics_Pong",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Pong",
+      "Arguments": []
+    },
+    "206": {
+      "EventId": 206,
+      "Category": "Diagnostics",
+      "Method": "TraceStarted",
+      "Summary": "Like the HTTP verb TRACE or a network Trace method, this method indicates a \"Trace\" method has been issued, and might be about to call target systems",
+      "FullyQualifiedMethodName": "Diagnostics_TraceStarted",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Trace started. Target: {target}",
+      "Arguments": [
+        {
+          "Name": "target",
+          "ValueType": "string",
+          "Summary": "Friendly name of the target system it might be asked to call."
+        }
+      ]
+    },
+    "207": {
+      "EventId": 207,
+      "Category": "Diagnostics",
+      "Method": "TraceFinished",
+      "Summary": "Marks the end of a trace, that the app is returning the trace results.",
+      "FullyQualifiedMethodName": "Diagnostics_TraceFinished",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Trace finished. Target: {target}",
+      "Arguments": [
+        {
+          "Name": "target",
+          "ValueType": "string",
+          "Summary": "Friendly name of the target system it might be asked to call."
+        }
+      ]
+    },
+    "208": {
+      "EventId": 208,
+      "Category": "Diagnostics",
+      "Method": "SelfCheckStarted",
+      "Summary": "Just like Data in Star Trek, or your car when you turn the key, these are quick tests.  This marks the start of the self-diagnostics.",
+      "Remarks" : [
+        "Not to be confused with Health Check.  A health check is way more thorough and a long process than a self-check."
+      ],
+      "FullyQualifiedMethodName": "Diagnostics_SelfCheckStarted",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Self-Check started.  Requested by {trigger}",
+      "Arguments": [{
+        "Name": "trigger",
+        "ValueType": "string",
+        "Summary": "Friendly name of what triggered the self-diagnostics.  Timer, exposed app method, etc."
+      }]
+    },
+    "209": {
+      "EventId": 209,
+      "Category": "Diagnostics",
+      "Method": "SelfCheckValid",
+      "Summary": "All systems are go.",
+      "FullyQualifiedMethodName": "Diagnostics_SelfCheckValid",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Functioning within designed parameters.  Number of tests: {numberOfTests}",
+      "Arguments": [
+        {
+          "Name": "numberOfTests",
+          "ValueType": "string",
+          "Summary": "The number of tests that were performed."
+        }
+      ]
+    },
+    "210": {
+      "EventId": 210,
+      "Category": "Diagnostics",
+      "Method": "HealthCheckStarted",
+      "Summary": "Health check is much more complex and thorough than a self-diagnostics.",
+      "Remarks": [
+        "During a health check, a battery of tests are typically performed, validating that it's capable of calling, modifying, deleting, interacting with every part of the system, including external systems."
+        , "The goal of a health check is to make sure it catches actions it can't do before the end-user figures it out, good UX."
+        , "A great application will have a plan B in the event it finds it can't do certain actions, inform the IT/Admins and update the UI accordingly so the user aware of the situation but that they're in good hands and that they don't have to worry, things will be alright."
+        , "There's a good chance that this when the application is put in {see 401} degraded mode."
+      ],
+      "FullyQualifiedMethodName": "Diagnostics_HealthCheckStarted",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Health Check Started",
+      "Arguments": []
+    },
+    "211": {
+      "EventId": 211,
+      "Category": "Diagnostics",
+      "Method": "HealthCheckIsHealthy",
+      "Summary": "All tests have returned and the app got a passing grade.",
+      "FullyQualifiedMethodName": "Diagnostics_HealthCheckIsHealthy",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Healthy - Number of tests: {numberOfTests}",
+      "Arguments": [
+        {
+          "Name": "numberOfTests",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "212": {
+      "EventId": 212,
+      "Category": "Dependency",
+      "Method": "ValidatingVersion",
+      "Summary": "The Dependency Framework has loaded what was requested, but are they the right version?",
+      "FullyQualifiedMethodName": "Dependency_ValidatingVersion",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Validating {friendlyName} version",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendlyName of the resource to validate."
+        }
+      ]
+    },
+    "213": {
+      "EventId": 213,
+      "Category": "Dependency",
+      "Method": "VersionMatchesExpected",
+      "Summary": "The version of the loaded resource matches the expected version.",
+      "FullyQualifiedMethodName": "Dependency_VersionMatchesExpected",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Good: {friendlyName} version {actualVersion} matches expected version {expectedVersion}",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendlyName of the resource to validate."
+        },
+        {
+          "Name": "actualVersion",
+          "ValueType": "string",
+          "Summary": "Version of the resource"
+        },
+        {
+          "Name": "expectedVersion",
+          "ValueType": "string",
+          "Summary": "Version that will be used to validate."
+        }
+      ]
+    },
+    "301": {
+      "EventId": 301,
+      "Category": "Application",
+      "Method": "InMaintenance",
+      "Summary": "The application is maintenance mode.  Current requests might/will continue to be processed, but new ones will be refused.",
+      "FullyQualifiedMethodName": "Application_InMaintenance",
+      "EventClass": "OperationalWarning",
+      "LogLevel": "Warning",
+      "Message": "Application is in Maintenance mode.",
+      "Arguments": []
+    },
+    "302": {
+      "EventId": 302,
+      "Category": "Diagnostics",
+      "Method": "ValidationFailed",
+      "Summary": "Self-Check found issues.",
+      "FullyQualifiedMethodName": "Diagnostics_ValidationFailed",
+      "EventClass": "OperationalWarning",
+      "LogLevel": "Warning",
+      "Message": "Self-Check found issues.  {issues}",
+      "Arguments": [
+        {
+          "Name": "issues",
+          "ValueType": "string[]",
+          "Summary": "list of issues found"
+        }
+      ]
+    },
+    "303": {
+      "EventId": 303,
+      "Category": "Diagnostics",
+      "Method": "HealthCheckIsUnhealthy",
+      "Summary": "Health check was performed, issues were found, the application is not working at 100% capacity.",
+      "FullyQualifiedMethodName": "Diagnostics_HealthCheckIsUnhealthy",
+      "EventClass": "OperationalWarning",
+      "LogLevel": "Warning",
+      "Message": "Bad health report. Number of failed tests: {numberOfTests}.",
+      "Arguments": [
+        {
+          "Name": "numberOfTests",
+          "ValueType": "string",
+          "Summary": "number of failed tests"
+        }
+      ]
+    },
+    "304": {
+      "EventId": 304,
+      "Category": "Dependency",
+      "Method": "VersionMismatch",
+      "Summary": "The resource's version does not match the expected version.",
+      "FullyQualifiedMethodName": "Dependency_VersionMismatch",
+      "EventClass": "OperationalWarning",
+      "LogLevel": "Warning",
+      "Message": "Bad: {friendlyName} version {actualVersion} does not match expected version {expectedVersion}, some functionality might not work as expected.",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendlyName of the resource to validate."
+        },
+        {
+          "Name": "actualVersion",
+          "ValueType": "string",
+          "Summary": "Version of the resource"
+        },
+        {
+          "Name": "expectedVersion",
+          "ValueType": "string",
+          "Summary": "Version that was used to validate."
+        }
+      ]
+    },
+    "401": {
+      "EventId": 401,
+      "Category": "Application",
+      "Method": "InDegradedMode",
+      "Summary": "The application is running in degraded mode, some functionality might be affected.",
+      "Remarks": [
+        "Typical outcome of a failed health check."
+        , "A great application will have a plan B in the event it finds it can't do certain actions, inform the IT/Admins and update the UI accordingly so the user aware of the situation but that they're in good hands and that they don't have to worry, things will be alright."
+        , "An example of a plan B is an external system that suddenly becomes offline, but the app can run with cached values, or will switch to a local storage system until the target system becomes back online."
+      ],
+      "FullyQualifiedMethodName": "Application_InDegradedMode",
+      "EventClass": "RecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Application is in Degraded mode.  Start throttling incoming connections or scale out/scale up.",
+      "Arguments": []
+    },
+    "402": {
+      "EventId": 402,
+      "Category": "Configuration",
+      "Method": "NotVerifiable",
+      "Summary": "The configuration was loaded, but the content is not verifiable",
+      "FullyQualifiedMethodName": "Configuration_NotVerifiable",
+      "EventClass": "RecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Configuration is not verifiable.",
+      "Arguments": []
+    },
+    "418": {
+      "EventId": 418,
+      "Category": "Diagnostics",
+      "Method": "ImaTeapot",
+      "Summary": "There is coffee all over the world. Increasingly, in a world in which computing is ubiquitous, the computists want to make coffee. Coffee brewing is an art, but the distributed intelligence of the web-connected world transcends art.  Thus, there is a strong, dark, rich requirement for a protocol designed espressoly for the brewing of coffee. Coffee is brewed using coffee pots.  Networked coffee pots require a control protocol if they are to be controlled",
+      "Remarks" : [
+        "Increasingly, home and consumer devices are being connected to the Internet. Early networking experiments demonstrated vending devices connected to the Internet for status monitoring [COKE]. One of the first remotely _operated_ machine to be hooked up to the Internet, the Internet Toaster, (controlled via SNMP) was debuted in 1990[RFC2235]."
+        , "The demand for ubiquitous appliance connectivity that is causing the consumption of the IPv4 address space. Consumers want remote control of devices such as coffee pots so that they may wake up to freshly brewed coffee, or cause coffee to be prepared at a precise time after the completion of dinner preparations."
+      ],
+      "FullyQualifiedMethodName": "Diagnostics_ImaTeapot",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Event raised when describing HTCPCP, a protocol for controlling, monitoring, and diagnosing coffee pots.",
+      "Arguments": []
+    },
+    "501": {
+      "EventId": 501,
+      "Category": "Configuration",
+      "Method": "Unusable",
+      "Summary": "The configuration was either unavailable, corrupt, or impossible to read.  The reason will hint IT where to look, what to look for and how to fix it.",
+      "FullyQualifiedMethodName": "Configuration_Unusable",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Configuration is Unusable.  Reason {reason}",
+      "Arguments": [
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": "Reason why the configuration is unusable."
+        }
+      ]
+    },
+    "502": {
+      "EventId": 502,
+      "Category": "External",
+      "Method": "ConnectionFailedAuthentication",
+      "Summary": "A connection to an external system was attempted but the account/credential were invalid",
+      "FullyQualifiedMethodName": "External_ConnectionFailedAuthentication",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Connection to External {externalName} with {credentials} failed because of an authentication error.  {exception}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the target system"
+        },
+        {
+          "Name": "credentials",
+          "ValueType": "string",
+          "Summary": "can be a username, token, key, etc."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "string",
+          "Summary": "exception returned by the target system"
+        }
+      ]
+    },
+    "503": {
+      "EventId": 503,
+      "Category": "External",
+      "Method": "ConnectionFailedAuthorization",
+      "Summary": "A connection to an external system was attempted, the account/credential is valid but doesn't have the proper rights/permissions in the target system.",
+      "FullyQualifiedMethodName": "External_ConnectionFailedAuthorization",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Connection to External {externalName} with {credentials} failed because of an authorization error.  {exception}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the target system"
+        },
+        {
+          "Name": "credentials",
+          "ValueType": "string",
+          "Summary": "can be a username, token, key, etc."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "string",
+          "Summary": "exception returned by the target system"
+        }
+      ]
+    },
+    "504": {
+      "EventId": 504,
+      "Category": "Dependency",
+      "Method": "ResolutionFailed",
+      "Summary": "A resource wasn't found or loaded.",
+      "FullyQualifiedMethodName": "Dependency_ResolutionFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Failed to resolve dependency {friendlyName}",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendly name of the resource"
+        }
+      ]
+    },
+    "505": {
+      "EventId": 505,
+      "Category": "External",
+      "Method": "NotificationNotSent",
+      "Summary": "",
+      "FullyQualifiedMethodName": "External_NotificationNotSent",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Notification not sent.  Method {method}, Recipient {recipient}",
+      "Arguments": [
+        {
+          "Name": "method",
+          "ValueType": "string",
+          "Summary": ""
+        },
+        {
+          "Name": "recipient",
+          "ValueType": "string",
+          "Summary": ""
+        }
+      ]
+    },
+    "506": {
+      "EventId": 506,
+      "Category": "Configuration",
+      "Method": "ValueIsInvalid",
+      "Summary": "The validation of a configuration setting failed.",
+      "FullyQualifiedMethodName": "Configuration_ValueIsInvalid",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Configuration setting {friendlyName} with value {value} failed the test {test}.",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "The name of friendly name of the configuration item"
+        },
+        {
+          "Name": "value",
+          "ValueType": "object",
+          "Summary": "The value, read from the configuration"
+        },
+        {
+          "Name": "test",
+          "ValueType": "string",
+          "Summary": "The test that validated the value"
+        }]
+    },
+    "601": {
+      "EventId": 601,
+      "Category": "External",
+      "Method": "ConnectionFailedTimeout",
+      "Summary": "The connection to the target system failed, timed out",
+      "FullyQualifiedMethodName": "External_ConnectionFailedTimeout",
+      "EventClass": "Exceptional",
+      "LogLevel": "Error",
+      "Message": "Connection to External {externalName} using {uri} failed because of a timeout {exception}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the target system"
+        },
+        {
+          "Name": "uri",
+          "ValueType": "string",
+          "Summary": "Uri of the target system."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "string",
+          "Summary": "exception returned by the target system"
+        }
+      ]
+    },
+    "602": {
+      "EventId": 602,
+      "Category": "External",
+      "Method": "ConnectionFailedTargetServiceUnavailable",
+      "Summary": "Couldn't connect to target system, no response from target system.",
+      "FullyQualifiedMethodName": "External_ConnectionFailedTargetServiceUnavailable",
+      "EventClass": "Exceptional",
+      "LogLevel": "Error",
+      "Message": "Connection to External {externalName} using {uri} failed because target is unavailable {exception}",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "friendly name of the target system"
+        },
+        {
+          "Name": "uri",
+          "ValueType": "string",
+          "Summary": "Uri of the target system."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "string",
+          "Summary": "exception returned by the target system"
+        }
+      ]
+    },
+    "603": {
+      "EventId": 603,
+      "Category": "Dependency",
+      "Method": "VersionMismatchedDegradedMode",
+      "Summary": "The version of the target resource doesn't match what was expected, the application can continue but using a plan B, and reduced capacity.",
+      "Remarks": ["It's typical in this situation that the application is put in {see 401} degraded mode."],
+      "FullyQualifiedMethodName": "Dependency_VersionMismatchedDegradedMode",
+      "EventClass": "Exceptional",
+      "LogLevel": "Error",
+      "Message": "Target {friendlyName} has wrong version {actualVersion}, expected version {expectedVersion}.  Using fallback {fallbackName} {fallbackVersion}, application will continue to work, but in degraded mode",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendly name of the resource"
+        },
+        {
+          "Name": "actualVersion",
+          "ValueType": "string",
+          "Summary": "version of the resource"
+        },
+        {
+          "Name": "expectedVersion",
+          "ValueType": "string",
+          "Summary": "version used during the validation"
+        },
+        {
+          "Name": "fallbackName",
+          "ValueType": "string",
+          "Summary": "friendly name of the fallback resource used instead as a plan B"
+        },
+        {
+          "Name": "fallbackVersion",
+          "ValueType": "string",
+          "Summary": "version of the fallback resource"
+        }
+      ]
+    },
+    "604": {
+      "EventId": 604,
+      "Category": "Dependency",
+      "Method": "VersionMismatchedShuttingDown",
+      "Summary": "Now this is bad.  An important resource isn't available, there's no plan B, and the application really can't continue.  This is a bad UX.",
+      "FullyQualifiedMethodName": "Dependency_VersionMismatchedShuttingDown",
+      "EventClass": "Exceptional",
+      "LogLevel": "Error",
+      "Message": "Target {friendlyName} has wrong version {actualVersion}, expected version {expectedVersion}.  Application can't continue.",
+      "Arguments": [
+        {
+          "Name": "friendlyName",
+          "ValueType": "string",
+          "Summary": "friendly name of the resource that doesn't match the expected version."
+        },
+        {
+          "Name": "actualVersion",
+          "ValueType": "string",
+          "Summary": "version of the resource loaded."
+        },
+        {
+          "Name": "expectedVersion",
+          "ValueType": "string",
+          "Summary": "version used in the validation"
+        }
+      ]
+    },
+    "701": {
+      "EventId": 701,
+      "Category": "Application",
+      "Method": "UnhandledException",
+      "Summary": "Ultimate development shame, this marks the worst that can happen, an exception occurred, wasn't trapped but the application's main process caught it.",
+      "FullyQualifiedMethodName": "Application_UnhandledException",
+      "EventClass": "Catastrophic",
+      "LogLevel": "Critical",
+      "Message": "Unhandled exception {exception}",
+      "Arguments": [
+        {
+          "Name": "exception",
+          "ValueType": "string",
+          "Summary": "the exception the application."
+        }
+      ]
+    }
+  },
+  "LogClass": {
+    "LowLevel": {
+      "Name": "LowLevel",
+      "No": 1,
+      "Summary": "Positive, low-level lifecycle related app events like Start, Pause, Stop, reading Configuration/Settings, Dependency initialization - Application plumbing, no intervention required by anyone"
+    },
+    "OperationalInformation": {
+      "Name": "OperationalInformation",
+      "No": 2,
+      "Summary": "Positive, normal run, expected, operational events like calling an external service, running diagnostics -  No intervention required by anyone"
+    },
+    "OperationalWarning": {
+      "Name": "OperationalWarning",
+      "No": 3,
+      "Summary": "Normal, run, expected, operational warning like when an app is switching to InMaintenance, when a diagnostic test failed validation, or there's a mismatch of version.  - No immediate intervention required by anyone, but should be investigated anyhow."
+    },
+    "RecoverableWarning": {
+      "Name": "RecoverableWarning",
+      "No": 4,
+      "Summary": "Internal, recoverable problems, where the app can continue to work but with limited functionality, like the app is running in DegradedMode, the app has the ability to recover from the incident.  Admin intervention is not a necessity but is a good idea to monitor the situation."
+    },
+    "UnrecoverableWarning": {
+      "Name": "UnrecoverableWarning",
+      "No": 5,
+      "Summary": "Internal, unrecoverable problems, like un-usable configuration, failed authentication/authorization to a service, the app can continue to work but with limited functionality, and an intervention by an admin is required."
+    },
+    "Exceptional": {
+      "Name": "Exceptional",
+      "No": 6,
+      "Summary": "External, out of our control incidents, like timeouts/unavailable external systems, missing dependency that prevents the app from running.  Immediate intervention by an administrator is required.  Let's be clear, Exceptional doesn't mean so good it's exceptional, it's the opposite."
+    },
+    "Catastrophic": {
+      "Name": "Catastrophic",
+      "No": 7,
+      "Summary": "Catastrophic, unplanned, unrecoverable, unexpected. boom!"
+    }
+  },
+  "Related": {
+    "Ing_Ed" : [
+      {
+        "Ing": "101",
+        "Ed": "102",
+        "Fails": []
+      },
+      {
+        "Ing": "103",
+        "Ed": "104",
+        "Fails": []
+      },
+      {
+        "Ing": "105",
+        "Ed": "106",
+        "Fails": []
+      },
+      {
+        "Ing": "107",
+        "Ed": "108",
+        "Fails": []
+      },
+      {
+        "Ing": "201",
+        "Ed": "202",
+        "Fails": [
+          "502",
+          "503",
+          "601",
+          "602"
+        ]
+      }
+    ],
+    "Lifecycle":[
+      {
+        "Name" : "Application",
+        "States" : [
+          "101",
+          "102",
+          "105",
+          "106",
+          "107",
+          "108",
+          "103",
+          "104"
+        ]
+      },
+      {
+        "Name" : "Application Mode",
+        "States" :
+        [
+          "204",
+          "301",
+          "401"
+        ]
+      },
+      {
+        "Name" : "Logging",
+        "States" : [
+          "117",
+          "118",
+          "119"
+        ]
+      }
+
+
+
+    ]
+  }
+}
