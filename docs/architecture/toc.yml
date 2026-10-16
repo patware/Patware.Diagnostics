@@ -1,0 +1,23 @@
+items:
+- name: Architecture
+  href: ARCHITECTURE.md
+- name: Vision
+  href: VISION.md
+- name: Roadmap
+  href: ROADMAP.md
+- name: Definitions
+  href: DIAGNOSTICS-DEFINITIONS.md
+- name: Event Governance
+  href: EVENT-GOVERNANCE.md
+- name: Event Model
+  href: EVENT-MODEL.md
+- name: Instrumentation
+  href: INSTRUMENTATION.md
+- name: Configuration
+  href: CONFIGURATION.md
+- name: Observability
+  href: OBSERVABILITY.md
+- name: Security
+  href: SECURITY-PRIVACY.md
+- name: Package Design
+  href: PACKAGE-DESIGN.md

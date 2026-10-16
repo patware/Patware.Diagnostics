@@ -1,0 +1,11 @@
+items:
+- name: Architecture
+  href: architecture/toc.yml
+- name: Design
+  href: design/toc.yml
+- name: Development
+  href: development/toc.yml
+- name: Architecture decisions
+  href: adr/toc.yml
+- name: API reference
+  href: api/toc.yml
