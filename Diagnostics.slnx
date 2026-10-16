@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/libraries/" />
   <Folder Name="/libraries/ApplicationEvents/">
+    <Project Path="SampleApplications/SampleBlazorApp/SampleBlazorApp.csproj" Id="5b8ddbe8-6a4f-40d3-aa3f-9467512e1d2b" />
     <Project Path="src/ApplicationEvents/ApplicationEvents.Core/ApplicationEvents.Core.csproj" />
     <Project Path="src/ApplicationEvents/ApplicationEvents.Hosting/ApplicationEvents.Hosting.csproj" Id="23edcce6-1a8b-4560-9942-347cc58282c5" />
   </Folder>
