@@ -4,7 +4,7 @@ Automatic application lifecycle events for the .NET Generic Host.
 
 ```csharp
 using Microsoft.Extensions.Hosting;
-using Patware.ApplicationEvents;
+using Patware.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -12,6 +12,24 @@ builder.AddPatwareApplicationEvents();
 
 await builder.Build().RunAsync();
 ```
+
+If you want logs formatted:
+
+
+```csharp
+using Microsoft.Extensions.Hosting;
+using Patware.ApplicationEvents.Hosting;
+
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+builder.AddPatwareApplicationEvents(options =>
+{
+    options.FormatLogs = true;
+});
+
+await builder.Build().RunAsync();
+```
+
 
 The package emits events 101–104 through the application's existing
 logging providers.
