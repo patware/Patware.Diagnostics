@@ -7,7 +7,7 @@ published releases are identified by package and release date below.
 
 ### Added
 
-## 0.0.1 - Pending publication
+## 0.0.1 - 2026-10-17
 
 ### Added
 
@@ -16,5 +16,3 @@ published releases are identified by package and release date below.
 - Automatic lifecycle logging through the .NET Generic Host.
 - Optional console formatting with bold, severity-colored event identifiers.
 - Core and Hosting packages targeting .NET 10.
-
-### Current limitations
