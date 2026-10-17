@@ -1,4 +1,4 @@
-using Patware.ApplicationEvents.Hosting;
+using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 using SampleBlazorApp.Components;
 

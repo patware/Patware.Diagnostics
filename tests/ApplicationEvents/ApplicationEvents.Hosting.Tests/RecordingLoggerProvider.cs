@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents.Hosting.Tests;
+namespace ApplicationEvents.Hosting.Tests;
 
 /// <summary>
 /// Captures records emitted through a host's logging pipeline.

@@ -438,7 +438,7 @@ $lifecycleModels = @(
 )
 
 $model = @{
-  Namespace = 'Patware.ApplicationEvents'
+  Namespace = 'Patware.Diagnostics.ApplicationEvents'
   Categories = $categoryModels
   Events = $documentationEvents
   Pairs = $pairModels

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents.Core.Tests;
+using Patware.Diagnostics.ApplicationEvents;
+
+namespace ApplicationEvents.Core.Tests;
 
 /// <summary>
 /// Verifies the public contracts of application lifecycle event methods.

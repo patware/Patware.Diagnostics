@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging.Console;
 
-namespace Patware.ApplicationEvents.Hosting.Formatting;
+namespace Patware.Diagnostics.ApplicationEvents.Hosting.Formatting;
 
 /// <summary>
 /// Configures the Patware event identifier console formatter.

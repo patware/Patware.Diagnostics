@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
-namespace Patware.ApplicationEvents.Hosting.Formatting;
+namespace Patware.Diagnostics.ApplicationEvents.Hosting.Formatting;
 
 /// <summary>
 /// Formats console records with bold, severity-colored event identifiers.

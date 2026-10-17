@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents.Hosting;
+namespace Patware.Diagnostics.ApplicationEvents.Hosting;
 
 /// <summary>
 /// Observes host lifecycle notifications and emits application events.
@@ -52,7 +52,7 @@ internal sealed class ApplicationEventsLifecycleService :
 
         _lifetime = lifetime;
         _logger = loggerFactory.CreateLogger(
-            "Patware.ApplicationEvents.Hosting");
+            "Patware.Diagnostics.ApplicationEvents.Hosting");
     }
 
     /// <inheritdoc />

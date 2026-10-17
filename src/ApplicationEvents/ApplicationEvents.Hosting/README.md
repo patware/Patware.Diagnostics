@@ -1,10 +1,10 @@
-# Patware.ApplicationEvents.Hosting
+# Patware.Diagnostics.ApplicationEvents.Hosting
 
 Automatic application lifecycle events for the .NET Generic Host.
 
 ```csharp
 using Microsoft.Extensions.Hosting;
-using Patware.ApplicationEvents.Hosting;
+using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -18,7 +18,7 @@ If you want logs formatted:
 
 ```csharp
 using Microsoft.Extensions.Hosting;
-using Patware.ApplicationEvents.Hosting;
+using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 

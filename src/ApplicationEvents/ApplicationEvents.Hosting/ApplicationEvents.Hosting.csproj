@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <PackageId>Patware.ApplicationEvents.Hosting</PackageId>
-    <AssemblyName>Patware.ApplicationEvents.Hosting</AssemblyName>
-    <RootNamespace>Patware.ApplicationEvents.Hosting</RootNamespace>
+
+    <PackageId>Patware.Diagnostics.ApplicationEvents.Hosting</PackageId>
+    <AssemblyName>Patware.Diagnostics.ApplicationEvents.Hosting</AssemblyName>
+    <RootNamespace>Patware.Diagnostics.ApplicationEvents.Hosting</RootNamespace>
+    
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     <Description>

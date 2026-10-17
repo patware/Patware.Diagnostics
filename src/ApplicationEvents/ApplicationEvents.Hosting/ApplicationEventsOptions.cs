@@ -1,4 +1,4 @@
-namespace Patware.ApplicationEvents.Hosting;
+namespace Patware.Diagnostics.ApplicationEvents.Hosting;
 
 /// <summary>
 /// Configures application event registration.

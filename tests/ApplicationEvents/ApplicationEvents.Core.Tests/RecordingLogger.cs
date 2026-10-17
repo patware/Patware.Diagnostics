@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents.Core.Tests;
+namespace ApplicationEvents.Core.Tests;
 
 /// <summary>
 /// Captures logging calls for assertions.

@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <PackageId>Patware.ApplicationEvents.Core</PackageId>
-    <AssemblyName>Patware.ApplicationEvents.Core</AssemblyName>
-    <RootNamespace>Patware.ApplicationEvents</RootNamespace>
+
+    <PackageId>Patware.Diagnostics.ApplicationEvents.Core</PackageId>
+    <AssemblyName>Patware.Diagnostics.ApplicationEvents.Core</AssemblyName>
+    <RootNamespace>Patware.Diagnostics.ApplicationEvents</RootNamespace>
+    
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
   </PropertyGroup>

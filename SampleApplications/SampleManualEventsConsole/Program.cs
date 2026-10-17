@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using Patware.ApplicationEvents;
+using Patware.Diagnostics.ApplicationEvents;
 
 Console.WriteLine("Starting... please wait");
 

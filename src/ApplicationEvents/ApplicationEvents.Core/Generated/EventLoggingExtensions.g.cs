@@ -7,7 +7,7 @@
 using System;
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents;
+namespace Patware.Diagnostics.ApplicationEvents;
 
 /// <summary>
 /// Provides access to categorized diagnostic events.

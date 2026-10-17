@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using Patware.ApplicationEvents.Hosting;
+using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 namespace SampleWpf;
 

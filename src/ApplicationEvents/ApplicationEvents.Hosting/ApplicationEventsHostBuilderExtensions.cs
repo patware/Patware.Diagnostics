@@ -2,9 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using Patware.ApplicationEvents.Hosting.Formatting;
+using Patware.Diagnostics.ApplicationEvents.Hosting.Formatting;
 
-namespace Patware.ApplicationEvents.Hosting;
+namespace Patware.Diagnostics.ApplicationEvents.Hosting;
 
 /// <summary>
 /// Registers automatic application events with a host builder.

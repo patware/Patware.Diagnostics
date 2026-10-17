@@ -11,7 +11,7 @@ logging category, providers, or configuration.
 Import the API namespace:
 
 ```csharp
-using Patware.ApplicationEvents;
+using Patware.Diagnostics.ApplicationEvents;
 ```
 
 The examples below assume an existing `ILogger` named `logger` and

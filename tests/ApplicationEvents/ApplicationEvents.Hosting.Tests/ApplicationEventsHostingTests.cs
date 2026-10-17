@@ -2,7 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Patware.ApplicationEvents.Hosting.Tests;
+using Patware.Diagnostics.ApplicationEvents.Hosting;
+
+namespace ApplicationEvents.Hosting.Tests;
 
 /// <summary>
 /// Verifies application events emitted through the real Generic Host.
@@ -17,7 +19,7 @@ namespace Patware.ApplicationEvents.Hosting.Tests;
 [TestClass]
 public sealed class ApplicationEventsHostingTests
 {
-    private const string EventCategory = "Patware.ApplicationEvents.Hosting";
+    private const string EventCategory = "Patware.Diagnostics.ApplicationEvents.Hosting";
 
     /// <summary>
     /// Verifies event order and exactly-once emission across host startup
