@@ -1,0 +1,7 @@
+items:
+- name: Coding Standards
+  href: CODING-STANDARDS.md
+- name: Getting Started
+  href: GETTING-STARTED.md
+- name: Testing
+  href: TESTING.md

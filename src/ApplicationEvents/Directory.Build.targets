@@ -1,0 +1,8 @@
+<Project>
+  <!-- Import shared package metadata before appending family-specific tags. -->
+  <Import Project="$(MSBuildThisFileDirectory)../../Directory.Build.targets" />
+
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageTags>$(PackageTags);logging;events;structured-logging</PackageTags>
+  </PropertyGroup>
+</Project>
