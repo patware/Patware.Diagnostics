@@ -397,3 +397,5 @@ finally {
   SymbolCount      = $symbols.Count
   SmokeDirectory   = $smokeDirectory
 }
+
+Start-Process $PackageDirectory
