@@ -141,7 +141,7 @@ public sealed class ApplicationEventsHostingTests
 
         for (int index = 0; index < registrationCount; index++)
         {
-            builder.AddPatwareApplicationEvents();
+            builder.AddApplicationEvents();
         }
 
         return builder.Build();

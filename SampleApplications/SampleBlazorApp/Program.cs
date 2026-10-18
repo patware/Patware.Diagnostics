@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.AddPatwareApplicationEvents(options =>
+builder.AddApplicationEvents(options =>
 {
     options.FormatLogs = true;
     options.LogUnhandledExceptions = true;

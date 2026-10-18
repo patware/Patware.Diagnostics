@@ -25,7 +25,7 @@ using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-builder.AddPatwareApplicationEvents();
+builder.AddApplicationEvents();
 
 using IHost host = builder.Build();
 await host.RunAsync();
@@ -47,7 +47,7 @@ logging providers and filters.
 Replace the default registration with:
 
 ```csharp
-builder.AddPatwareApplicationEvents(options =>
+builder.AddApplicationEvents(options =>
 {
     options.FormatLogs = true;
 });
@@ -90,7 +90,7 @@ Do not also emit the same lifecycle events manually for the same host.
 ## Optional unhandled-exception reporting
 
 ```csharp
-builder.AddPatwareApplicationEvents(options =>
+builder.AddApplicationEvents(options =>
 {
     options.LogUnhandledExceptions = true;
     // Console formatting is independent and may also be enabled.

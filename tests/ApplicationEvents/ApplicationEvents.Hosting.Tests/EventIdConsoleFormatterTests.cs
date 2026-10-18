@@ -223,7 +223,7 @@ public sealed class EventIdConsoleFormatterTests
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
         // Act
-        builder.AddPatwareApplicationEvents(options => options.FormatLogs = formatLogs);
+        builder.AddApplicationEvents(options => options.FormatLogs = formatLogs);
 
         using IHost host = builder.Build();
 
@@ -276,7 +276,7 @@ public sealed class EventIdConsoleFormatterTests
     {
         HostApplicationBuilder builder = CreateBuilder();
 
-        builder.AddPatwareApplicationEvents(options =>
+        builder.AddApplicationEvents(options =>
             options.FormatLogs = true);
 
         builder.Services.Configure<EventIdConsoleFormatterOptions>(

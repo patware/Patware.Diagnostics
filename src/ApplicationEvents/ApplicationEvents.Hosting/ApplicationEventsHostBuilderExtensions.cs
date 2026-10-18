@@ -18,17 +18,46 @@ public static class ApplicationEventsHostBuilderExtensions
     /// <typeparam name="TBuilder">The host builder type.</typeparam>
     /// <param name="builder">The builder to configure.</param>
     /// <returns>The supplied builder.</returns>
+    [Obsolete("Use AddApplicationEvents() instead.")]
+    public static TBuilder AddPatwareApplicationEvents<TBuilder>(this TBuilder builder)
+        where TBuilder : IHostApplicationBuilder
+    {
+        return builder.AddApplicationEvents();
+    }
+
+    /// <summary>
+    /// Adds automatic application lifecycle events with explicit options.
+    /// </summary>
+    /// <typeparam name="TBuilder">The host builder type.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <param name="configure">Configures registration options.</param>
+    /// <returns>The supplied builder.</returns>
+    [Obsolete("Use AddApplicationEvents(configure) instead.")]
+    public static TBuilder AddPatwareApplicationEvents<TBuilder>(
+        this TBuilder builder,
+        Action<ApplicationEventsOptions> configure)
+        where TBuilder : IHostApplicationBuilder
+    {
+        return builder.AddApplicationEvents(configure);
+    }
+
+    /// <summary>
+    /// Adds automatic application lifecycle events using default options.
+    /// </summary>
+    /// <typeparam name="TBuilder">The host builder type.</typeparam>
+    /// <param name="builder">The builder to configure.</param>
+    /// <returns>The supplied builder.</returns>
     /// <exception cref="ArgumentNullException">
     /// The builder is null.
     /// </exception>
     /// <remarks>
     /// Default registration preserves the application's logging format.
     /// </remarks>
-    public static TBuilder AddPatwareApplicationEvents<TBuilder>(
+    public static TBuilder AddApplicationEvents<TBuilder>(
         this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
-        return builder.AddPatwareApplicationEvents(static _ => { });
+        return builder.AddApplicationEvents(static _ => { });
     }
 
     /// <summary>
@@ -60,7 +89,7 @@ public static class ApplicationEventsHostBuilderExtensions
     /// not remove that observer.
     /// </para>
     /// </remarks>
-    public static TBuilder AddPatwareApplicationEvents<TBuilder>(
+    public static TBuilder AddApplicationEvents<TBuilder>(
         this TBuilder builder,
         Action<ApplicationEventsOptions> configure)
         where TBuilder : IHostApplicationBuilder

@@ -11,7 +11,7 @@ Developers shouldn't have to reinvent logging conventions, memorize event IDs, o
 **One registration. Meaningful diagnostics. Minimal effort.**
 
 ```csharp
-builder.AddPatwareDiagnostics();
+builder.AddDiagnostics();
 ```
 
 The goal is simple:
@@ -36,13 +36,18 @@ TODO: Install instructions
 
 TODO: How to use instructions
 
-> [NOTE!] One important detail: builder.AddPatwareDiagnostics() is presented as the intended developer experience, not an API that already exists (yet).
+> [!NOTE]
+> `AddDiagnostics()` is the planned all-in-one registration API and is not yet implemented.
+> Use `AddApplicationEvents()` today to register automatic application events.
+> The previously proposed name `AddPatwareDiagnostics()` is deprecated in favor of
+> `AddDiagnostics()`. Existing `AddPatwareApplicationEvents()` calls are deprecated;
+> replace them with `AddApplicationEvents()` with the same options.
 
 ```csharp
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddPatwareDiagnostics();
+builder.AddDiagnostics();
 
 var app = builder.Build();
 

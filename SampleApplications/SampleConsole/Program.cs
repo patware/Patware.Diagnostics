@@ -5,7 +5,7 @@ using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-builder.AddPatwareApplicationEvents(options =>
+builder.AddApplicationEvents(options =>
 {
     options.FormatLogs = true;
     options.LogUnhandledExceptions = true;
