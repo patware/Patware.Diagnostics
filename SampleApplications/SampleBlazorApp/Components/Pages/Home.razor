@@ -1,7 +1,99 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+@using System.Threading
+@using Microsoft.Extensions.Hosting
 
-<h1>Hello, world!</h1>
+@inject IHostApplicationLifetime ApplicationLifetime
+@inject IHostEnvironment HostEnvironment
 
-Welcome to your new app.
+<PageTitle>Application events</PageTitle>
+
+<h1>Application events</h1>
+
+<p>
+    Watch the server console for Patware application events.
+</p>
+
+@if (HostEnvironment.IsDevelopment())
+{
+    <p>
+        Simulating a fatal exception terminates the server process.
+        Both actions disconnect all browser sessions.
+    </p>
+
+    <div>
+        <button type="button" disabled="@_actionRequested" @onclick="SimulateFatalException">
+            Simulate fatal exception (701)
+        </button>
+
+        <button type="button" disabled="@_actionRequested" @onclick="RequestShutdown">
+            Shut down gracefully (103 / 104)
+        </button>
+    </div>
+
+    <p role="status">@_status</p>
+}
+else
+{
+    <p>
+        Simulation controls are available in the Development environment.
+    </p>
+}
+
+@code {
+    private bool _actionRequested;
+    private string _status = "Application is running.";
+
+    /// <summary>
+    /// Triggers a terminating exception outside Blazor's circuit handlers.
+    /// </summary>
+    /// <remarks>
+    /// A dedicated thread allows the exception to reach the runtime
+    /// unhandled-exception notification. Throwing directly in this
+    /// component would exercise Blazor's circuit error handling instead.
+    /// </remarks>
+    private void SimulateFatalException()
+    {
+        if (!HostEnvironment.IsDevelopment() || _actionRequested)
+        {
+            return;
+        }
+
+        _actionRequested = true;
+        _status = "Triggering a fatal server exception...";
+
+        Thread crashThread = new(static () =>
+        {
+            throw new InvalidOperationException(
+                "Simulated fatal exception triggered from the Blazor sample.",
+                new ArgumentException("Simulated underlying failure."));
+        })
+        {
+            Name = "BlazorSimulatedFatalException",
+            IsBackground = true
+        };
+
+        crashThread.Start();
+    }
+
+    /// <summary>
+    /// Requests graceful shutdown of the server host.
+    /// </summary>
+    /// <remarks>
+    /// StopApplication signals the host to execute its shutdown sequence,
+    /// allowing the lifecycle observer to emit events 103 and 104.
+    /// </remarks>
+    private void RequestShutdown()
+    {
+        if (!HostEnvironment.IsDevelopment() || _actionRequested)
+        {
+            return;
+        }
+
+        _actionRequested = true;
+        _status = "Requesting graceful server shutdown...";
+
+        ApplicationLifetime.StopApplication();
+    }
+}

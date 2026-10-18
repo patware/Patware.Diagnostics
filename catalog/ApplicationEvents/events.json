@@ -21,8 +21,8 @@
         "Framework or bootstrap logging may occur before this event; it does not guarantee that it is the first log record in the process.",
         "Command-line arguments are excluded because they may contain sensitive information."
       ],
-      "Status": "Proposed",
-      "Since": null
+      "Status": "Stable",
+      "Since": "0.0.1"
     },
     "102": {
       "EventId": 102,
@@ -46,8 +46,8 @@
         "The caller supplies the elapsed duration; the logging method does not start or stop a timer.",
         "Successful startup does not guarantee that every optional dependency is healthy."
       ],
-      "Status": "Proposed",
-      "Since": null
+      "Status": "Stable",
+      "Since": "0.0.1"
 
     },
     "103": {
@@ -71,8 +71,8 @@
         "The reason describes the known cause of shutdown. Use 'Unknown' when the cause is unavailable rather than inferring one.",
         "This event indicates that shutdown has begun, not that cleanup has completed."
       ],
-      "Status": "Proposed",
-      "Since": null
+      "Status": "Stable",
+      "Since": "0.0.1"
     },
     "104": {
       "EventId": 104,
@@ -89,8 +89,37 @@
         "This event describes completion of application shutdown cleanup; it does not prove that the operating-system process has exited.",
         "Abrupt termination may prevent this event from being emitted."
       ],
-      "Status": "Proposed",
-      "Since": null
+      "Status": "Stable",
+      "Since": "0.0.1"
+    },
+    "701": {
+      "EventId": 701,
+      "EventName": "Application_UnhandledException",
+      "Category": "Application",
+      "Method": "UnhandledException",
+      "EventClass": "Catastrophic",
+      "LogLevel": "Critical",
+      "Message": "Application encountered an unrecoverable exception.",
+      "Arguments": [
+        {
+          "Name": "exception",
+          "ValueType": "Exception",
+          "Summary": "The exception that reached the application boundary and prevents normal operation from continuing."
+        }
+      ],
+      "Summary": "Reports an unrecoverable exception at an application boundary.",
+      "Trigger": "Emit when an exception reaches a top-level application boundary and the application cannot continue normally.",
+      "Remarks": [
+        "This event is intended for application-ending failures, not recoverable operation or request failures.",
+        "Unhandled means that lower-level application code did not recover from the exception; a top-level boundary may catch it to report the failure and initiate shutdown.",
+        "Pass the original exception so logging providers retain access to its type, stack trace, and inner exceptions.",
+        "The exception travels through the logging exception channel and is not a message-template property.",
+        "The exception argument must not be null, even when Critical logging is disabled.",
+        "Calling this method only emits a diagnostic record. It does not terminate the process, initiate shutdown, or install exception handlers.",
+        "Abrupt termination may prevent this event from being emitted or flushed."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.2"
     }
   },
   "LogClass": {

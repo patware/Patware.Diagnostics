@@ -29,8 +29,8 @@ Indicates that application initialization is beginning\.
 | API category | Application |
 | Event class | LowLevel |
 | Default level | Information |
-| Status | Proposed |
-| Introduced | Unpublished |
+| Status | Stable |
+| Introduced | 0.0.1 |
 
 ### Usage
 
@@ -60,8 +60,8 @@ Indicates that application initialization completed successfully and the applica
 | API category | Application |
 | Event class | LowLevel |
 | Default level | Information |
-| Status | Proposed |
-| Introduced | Unpublished |
+| Status | Stable |
+| Introduced | 0.0.1 |
 
 ### Usage
 
@@ -92,8 +92,8 @@ Indicates that application shutdown is beginning\.
 | API category | Application |
 | Event class | LowLevel |
 | Default level | Information |
-| Status | Proposed |
-| Introduced | Unpublished |
+| Status | Stable |
+| Introduced | 0.0.1 |
 
 ### Usage
 
@@ -123,8 +123,8 @@ Indicates that application shutdown cleanup has completed\.
 | API category | Application |
 | Event class | LowLevel |
 | Default level | Information |
-| Status | Proposed |
-| Introduced | Unpublished |
+| Status | Stable |
+| Introduced | 0.0.1 |
 
 ### Usage
 
@@ -144,6 +144,42 @@ None.
 
 - This event describes completion of application shutdown cleanup; it does not prove that the operating\-system process has exited\.
 - Abrupt termination may prevent this event from being emitted\.
+
+## 701 — Application_UnhandledException
+
+Reports an unrecoverable exception at an application boundary\.
+
+| Field | Value |
+| --- | --- |
+| API category | Application |
+| Event class | Catastrophic |
+| Default level | Critical |
+| Status | Stable |
+| Introduced | 0.0.2 |
+
+### Usage
+
+```csharp
+logger.Application.UnhandledException(@exception);
+```
+
+**Trigger:** Emit when an exception reaches a top\-level application boundary and the application cannot continue normally\.
+
+**Message template:** Application encountered an unrecoverable exception\.
+
+### Arguments
+
+- `exception` (`Exception`): The exception that reached the application boundary and prevents normal operation from continuing\.
+
+### Remarks
+
+- This event is intended for application\-ending failures, not recoverable operation or request failures\.
+- Unhandled means that lower\-level application code did not recover from the exception; a top\-level boundary may catch it to report the failure and initiate shutdown\.
+- Pass the original exception so logging providers retain access to its type, stack trace, and inner exceptions\.
+- The exception travels through the logging exception channel and is not a message\-template property\.
+- The exception argument must not be null, even when Critical logging is disabled\.
+- Calling this method only emits a diagnostic record\. It does not terminate the process, initiate shutdown, or install exception handlers\.
+- Abrupt termination may prevent this event from being emitted or flushed\.
 
 ## Related transitions
 

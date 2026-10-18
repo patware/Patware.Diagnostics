@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -52,6 +53,12 @@ public static class ApplicationEventsHostBuilderExtensions
     /// A subsequent call with formatting disabled does not undo an earlier
     /// formatter selection. Configure the feature once during startup.
     /// </para>
+    /// <para>
+    /// Unhandled-exception observation begins when its hosted service starts
+    /// and ends when it is disposed. Enabling it adds a process-wide
+    /// subscription. A later registration with the option disabled does
+    /// not remove that observer.
+    /// </para>
     /// </remarks>
     public static TBuilder AddPatwareApplicationEvents<TBuilder>(
         this TBuilder builder,
@@ -63,6 +70,15 @@ public static class ApplicationEventsHostBuilderExtensions
 
         ApplicationEventsOptions options = new();
         configure(options);
+
+        if (options.LogUnhandledExceptions)
+        {
+            builder.Services.TryAddSingleton<
+                IUnhandledExceptionSource,
+                AppDomainUnhandledExceptionSource>();
+
+            builder.Services.AddHostedService<UnhandledExceptionObserver>();
+        }
 
         builder.Services
             .AddHostedService<ApplicationEventsLifecycleService>();

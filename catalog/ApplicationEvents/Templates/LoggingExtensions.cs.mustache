@@ -97,8 +97,20 @@ public readonly struct {{GroupTypeName}}
     /// This group was default-initialized rather than obtained through
     /// a logger's category property.
     /// </exception>
+{{#Arguments}}
+{{#IsException}}
+    /// <exception cref="ArgumentNullException">
+    /// The {{Name}} argument is null.
+    /// </exception>
+{{/IsException}}
+{{/Arguments}}
     public void {{MethodName}}({{{ParameterList}}})
     {
+{{#Arguments}}
+{{#IsException}}
+      ArgumentNullException.ThrowIfNull(@{{Name}}, nameof(@{{Name}}));
+{{/IsException}}
+{{/Arguments}}
         {{MessagesTypeName}}.{{MethodName}}(Logger{{{ForwardArguments}}});
     }
 
