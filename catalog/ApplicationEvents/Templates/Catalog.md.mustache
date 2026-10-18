@@ -21,6 +21,8 @@ Calling an event method emits a record; it does not perform the
 application operation or lifecycle transition it describes.
 
 {{#Events}}
+<a id="event-{{EventId}}"></a>
+
 ## {{EventId}} — {{EventName}}
 
 {{{Summary}}}
@@ -67,6 +69,19 @@ None.
 None.
 {{/Remarks}}
 
+{{#HasRelationships}}
+### Related events
+
+{{#Relationships}}
+- {{{DescriptionMd}}} [{{{LabelMd}}}](#{{Anchor}})
+{{/Relationships}}
+
+These relationships describe expected progression for the same application
+instance. Other log records may appear between related events. Missing
+records can also result from filtering, collection loss, or abrupt termination.
+
+{{/HasRelationships}}
+
 {{/Events}}
 ## Related transitions
 
@@ -88,6 +103,16 @@ record will be emitted or retained.
 
 {{#Lifecycles}}
 ### {{{Name}}}
+
+```mermaid
+flowchart LR
+{{#Nodes}}
+    {{NodeId}}["{{EventId}} — {{EventName}}"]
+{{/Nodes}}
+{{#Edges}}
+    {{From}} --> {{To}}
+{{/Edges}}
+```
 
 {{#States}}
 - {{Text}}

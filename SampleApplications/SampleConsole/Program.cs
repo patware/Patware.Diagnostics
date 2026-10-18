@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
+using Patware.Diagnostics.ApplicationEvents;
 using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
@@ -33,10 +35,17 @@ if (Console.IsInputRedirected)
 
 Console.WriteLine();
 Console.WriteLine("Application is running.");
+Console.WriteLine("  D       Simulate App in degraded mode");
+Console.WriteLine("  N       Simulate App in back to normal mode");
 Console.WriteLine("  X       Simulate an unhandled exception (terminates the process)");
 Console.WriteLine("  Q       Shut down gracefully");
 Console.WriteLine("  Ctrl+C  Shut down gracefully");
 Console.WriteLine();
+
+ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
+
+// The sample owns transition detection; event methods only emit records.
+bool isDegraded = false;
 
 while (!shutdown.IsCompleted)
 {
@@ -49,6 +58,47 @@ while (!shutdown.IsCompleted)
     }
 
     ConsoleKey key = Console.ReadKey(intercept: true).Key;
+
+    if (key == ConsoleKey.D)
+    {
+        if (isDegraded)
+        {
+            Console.WriteLine("Already in degraded mode.  Press N to recover.");
+            continue;
+        }
+
+        isDegraded = true;
+
+        Console.WriteLine("Simulating Degraded mode  (just hit N to simulate it's running in normal mode ;)");
+
+        logger.Application.InDegradedMode("Network is down, can't connect to service XYZ");
+
+        continue;
+    }
+
+    if (key == ConsoleKey.N)
+    {
+        if (!isDegraded)
+        {
+            Console.WriteLine("Operating within normal specifications");
+            continue;
+        }
+
+        isDegraded = false;
+
+        Console.WriteLine("Simulating that we're Back to normal");
+        logger.Application.InNormalMode();
+
+        continue;
+    }
+
+
+    if (key == ConsoleKey.D)
+    {
+        Console.WriteLine("Degraded mode, sorry...  (just hit N to simulate it's running in normal mode ;)");
+        logger.Application.InDegradedMode("Network is down, can't connect to service XYZ");
+        break;
+    }
 
     if (key == ConsoleKey.Q)
     {

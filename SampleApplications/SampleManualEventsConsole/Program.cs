@@ -74,6 +74,18 @@ try
             new ArgumentException("Simulated invalid configuration."));
     }
 
+    if (args.Contains("--simulate-degraded", StringComparer.OrdinalIgnoreCase))
+    {
+        // Simulate an application-owned transition to reduced functionality.
+        // Logging the event does not activate an actual fallback.
+        logger.Application.InDegradedMode(
+            reason: "Simulated product service outage; using cached data.");
+
+        // Simulate recovery after all degradation conditions have cleared.
+        // A real application would emit this after verifying its recovery.
+        logger.Application.InNormalMode();
+    }
+
     Console.WriteLine("Application is running. Press Ctrl+C to stop.");
 
     // WaitForShutdownAsync executes the host shutdown sequence.

@@ -14,6 +14,10 @@ builder.AddApplicationEvents(options =>
     options.LogUnhandledExceptions = true;
 });
 
+// Cache and operating mode belong to the application instance,
+// rather than to individual Blazor circuits.
+builder.Services.AddSingleton<SampleBlazorApp.Services.CachedProductCatalog>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

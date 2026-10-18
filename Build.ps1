@@ -50,6 +50,13 @@ if ($testProjects.Count -eq 0) {
     throw 'No library test projects were found.'
 }
 
+$sampleApplications = Get-ChildItem (Join-Path $root 'SampleApplications') -Recurse -Filter *.csproj
+
+if ($sampleApplications.Count -eq 0) {
+    throw 'No sample applications were found.'
+}
+
+
 Push-Location $root
 
 try {
@@ -89,7 +96,6 @@ try {
             -- --minimum-expected-tests 1
     }
 
-
     foreach ($library in $libraries)
     {
       Write-Host "`nPacking $($library.PackageId)"
@@ -103,6 +109,36 @@ try {
           --output $OutputDirectory `
           @properties
     }
+
+
+    foreach($sample in $sampleApplications)
+    {
+        Write-Host "`nBuilding sample application $($sample.BaseName)"
+        dotnet build $sample.FullName --configuration Release
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Sample build failed: $($sample.FullName)"
+        }
+    }
+
+    Write-Host "`nGenerating documentation site"
+    Write-Host "   - API Documentation"
+    & docfx metadata docs/docfx.json
+
+    if ($LASTEXITCODE -ne 0)
+    {
+      throw "API Documentation generation failed"
+    }
+
+
+    Write-Host "   - MD Documentation"
+    & docfx build docs/docfx.json --warningsAsErrors
+
+    if ($LASTEXITCODE -ne 0)
+    {
+      throw "Documentation generation failed"
+    }
+
 
     # The success stream contains only this path.
     # Callers can capture it while build/test output remains visible.

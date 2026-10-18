@@ -6,7 +6,7 @@ for application developers to adopt.
 
 ## Formatting and naming
 
-Follow the repository’s [.editorconfig](../../.editorconfig) and the surrounding
+Follow the repository’s [.editorconfig](https://github.com/patware/Patware.Diagnostics/blob/main/.editorconfig) and the surrounding
 code. Treat `.editorconfig` as the source of truth for formatting rather than
 maintaining a second set of detailed formatting rules here.
 

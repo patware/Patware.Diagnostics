@@ -485,8 +485,6 @@ $RECYCLE.BIN/
 
 # Repository outputs and local environment overrides
 /artifacts/
-/docs/_site/
-/docs/api/
 .env.*
 !.env.example
 !.env.sample

@@ -3,7 +3,9 @@
 
 @using System.Threading
 @using Microsoft.Extensions.Hosting
+@using SampleBlazorApp.Services
 
+@inject CachedProductCatalog Catalog
 @inject IHostApplicationLifetime ApplicationLifetime
 @inject IHostEnvironment HostEnvironment
 
@@ -17,6 +19,104 @@
 
 @if (HostEnvironment.IsDevelopment())
 {
+    <section aria-labelledby="catalog-heading" aria-busy="@_refreshing">
+        <h2 id="catalog-heading">Product prices</h2>
+
+        <p>
+            Refresh prices from our simulated product service.
+            If it stops responding, the last successful values remain available.
+        </p>
+
+        <button type="button"
+                disabled="@(_refreshing || _actionRequested)"
+                @onclick="RefreshCatalogAsync">
+            @(_refreshing ? "Refreshing…" : "Refresh prices")
+        </button>
+
+        @if (HostEnvironment.IsDevelopment())
+        {
+            <button type="button"
+                    disabled="@(_refreshing || _actionRequested)"
+                    aria-pressed="@(!Catalog.IsAvailable ? "true" : "false")"
+                    @onclick="ToggleAvailability">
+                @(Catalog.IsAvailable
+                    ? "Simulate service outage"
+                    : "Restore service availability")
+            </button>
+
+            <p>
+                Simulated service:
+                <strong>@(Catalog.IsAvailable ? "Available" : "Unavailable")</strong>
+            </p>
+
+            <small>
+                This control affects every session connected to this server.
+                Press Refresh to observe the result.
+            </small>
+        }
+
+        <div aria-live="polite">
+            @if (_catalogSnapshot.IsDegraded)
+            {
+                <div class="alert alert-warning mt-3">
+                    <strong>We’re having trouble updating prices.</strong>
+
+                    @if (_catalogSnapshot.UpdatedAt.HasValue)
+                    {
+                        <p class="mb-0">
+                            Your last saved prices are still available below.
+                            They may be out of date. Please try refreshing again.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-0">
+                            We don’t have saved prices to show yet.
+                            Please try refreshing again.
+                        </p>
+                    }
+                </div>
+            }
+
+            <p role="status">@_catalogStatus</p>
+        </div>
+
+        @if (_catalogSnapshot.UpdatedAt is DateTimeOffset updatedAt)
+        {
+            <p>
+                Last successful refresh:
+                <time datetime="@updatedAt.ToString("O")">
+                    @updatedAt.ToString("yyyy-MM-dd HH:mm:ss 'UTC'")
+                </time>
+            </p>
+
+            <table class="table">
+                <caption>Last successfully fetched prices, in CAD</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price (CAD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (ProductPrice product in _catalogSnapshot.Products)
+                    {
+                        <tr>
+                            <th scope="row">@product.Name</th>
+                            <td>@product.Price.ToString("F2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else if (!_catalogSnapshot.IsDegraded)
+        {
+            <p>No prices loaded yet. Press Refresh to get started.</p>
+        }
+    </section>
+
+    <hr />
+
     <p>
         Simulating a fatal exception terminates the server process.
         Both actions disconnect all browser sessions.
@@ -44,6 +144,84 @@ else
 @code {
     private bool _actionRequested;
     private string _status = "Application is running.";
+
+    private bool _refreshing;
+    private CatalogSnapshot _catalogSnapshot = new(
+        Array.Empty<ProductPrice>(),
+        UpdatedAt: null,
+        IsDegraded: false);
+
+    private string _catalogStatus = "Ready to refresh.";
+
+
+    /// <inheritdoc />
+    protected override void OnInitialized()
+    {
+        // Display the shared cache when this browser session opens the page.
+        // Fetching remains an explicit user action, avoiding prerender side effects.
+        _catalogSnapshot = Catalog.Snapshot;
+    }
+
+    /// <summary>
+    /// Refreshes prices and displays the resulting shared cache snapshot.
+    /// </summary>
+    /// <remarks>
+    /// The shared service owns mode transitions and their logging.
+    /// The component owns only its interaction state and displayed snapshot.
+    /// </remarks>
+    private async Task RefreshCatalogAsync()
+    {
+        if (_refreshing || _actionRequested)
+        {
+            return;
+        }
+
+        _refreshing = true;
+        _catalogStatus = "Contacting the product service…";
+
+        try
+        {
+            await Catalog.RefreshAsync();
+
+            _catalogSnapshot = Catalog.Snapshot;
+
+            _catalogStatus = _catalogSnapshot.IsDegraded
+                ? "Refresh timed out."
+                : "Prices refreshed successfully.";
+        }
+        catch (OperationCanceledException)
+            when (ApplicationLifetime.ApplicationStopping.IsCancellationRequested)
+        {
+            _catalogStatus = "The application is shutting down.";
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    /// <summary>
+    /// Toggles availability for subsequent simulated service requests.
+    /// </summary>
+    /// <remarks>
+    /// Restoring availability does not remove the warning. A successful refresh
+    /// must establish recovery before the service emits event 204.
+    /// </remarks>
+    private void ToggleAvailability()
+    {
+        if (!HostEnvironment.IsDevelopment()
+            || _refreshing
+            || _actionRequested)
+        {
+            return;
+        }
+
+        Catalog.SetAvailability(!Catalog.IsAvailable);
+
+        _catalogStatus = Catalog.IsAvailable
+            ? "Service availability restored. Refresh to verify recovery."
+            : "Service outage enabled. Refresh to exercise the cached fallback.";
+    }
 
     /// <summary>
     /// Triggers a terminating exception outside Blazor's circuit handlers.

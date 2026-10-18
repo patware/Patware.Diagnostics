@@ -1,4 +1,6 @@
 items:
+- name: Events
+  href: EVENT-CATALOG.md
 - name: Architecture
   href: ARCHITECTURE.md
 - name: Vision

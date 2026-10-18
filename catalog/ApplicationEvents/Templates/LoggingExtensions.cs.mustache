@@ -91,6 +91,24 @@ public readonly struct {{GroupTypeName}}
 {{#Remarks}}
     /// <para>{{{TextXml}}}</para>
 {{/Remarks}}
+{{#HasRelationships}}
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+{{#Relationships}}
+    /// <para>
+    /// {{{DescriptionXml}}}
+{{#HasPublicApi}}
+    /// <see cref="{{{CrefXml}}}">{{{LabelXml}}}</see>.
+{{/HasPublicApi}}
+{{^HasPublicApi}}
+    /// {{{LabelXml}}} (retired; no public emission method).
+{{/HasPublicApi}}
+    /// </para>
+{{/Relationships}}
+{{/HasRelationships}}
     /// <para>Status: {{Status}}. Introduced: {{Since}}.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">

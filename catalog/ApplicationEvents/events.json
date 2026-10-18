@@ -48,7 +48,6 @@
       ],
       "Status": "Stable",
       "Since": "0.0.1"
-
     },
     "103": {
       "EventId": 103,
@@ -91,6 +90,57 @@
       ],
       "Status": "Stable",
       "Since": "0.0.1"
+    },
+    "204": {
+      "EventId": 204,
+      "EventName": "Application_InNormalMode",
+      "Category": "Application",
+      "Method": "InNormalMode",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Application has returned to normal operation.",
+      "Arguments": [],
+      "Summary": "Indicates that the application has recovered from degraded operation.",
+      "Trigger": "Emit when the application leaves degraded mode after all conditions causing reduced functionality have cleared.",
+      "Remarks": [
+        "This event describes recovery of the application instance as a whole. Recovery of one dependency is insufficient if another condition still leaves the application degraded.",
+        "Use Application_Started for successful startup; do not emit this event merely because startup completed.",
+        "Emit once per transition back to normal operation rather than on every successful health check.",
+        "Calling this method only emits a diagnostic record. It does not change application state, deduplicate calls, or verify recovery.",
+        "This event does not establish that a load balancer has resumed routing traffic to this instance.",
+        "The corresponding degraded-mode event is 401, Application_InDegradedMode."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.3"
+    },
+    "401": {
+      "EventId": 401,
+      "EventName": "Application_InDegradedMode",
+      "Category": "Application",
+      "Method": "InDegradedMode",
+      "EventClass": "RecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Application is operating in degraded mode. Reason: {Reason}",
+      "Arguments": [
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": "A non-sensitive description of the condition and its effect on application functionality."
+        }
+      ],
+      "Summary": "Indicates that a recoverable problem has reduced application functionality while allowing operation to continue.",
+      "Trigger": "Emit when the application first establishes degraded operation or transitions from normal to degraded operation.",
+      "Remarks": [
+        "Examples include serving cached data or temporarily disabling an optional feature while a dependency is unavailable.",
+        "A failed dependency check alone is insufficient: the application must determine that its functionality is reduced.",
+        "Emit once when entering degraded mode rather than repeatedly while the condition persists. The application owns transition detection.",
+        "Planned maintenance, deployment draining, and intentional traffic withdrawal do not by themselves constitute degraded operation.",
+        "Describe the operational impact without including credentials, connection strings, configuration values, or personal data.",
+        "Calling this method only emits a diagnostic record. It does not activate a fallback, change readiness, throttle traffic, or initiate recovery.",
+        "Emit 204, Application_InNormalMode, when all conditions causing degraded operation have cleared."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.3"
     },
     "701": {
       "EventId": 701,
@@ -160,7 +210,7 @@
     }
   },
   "Related": {
-    "Ing_Ed" : [
+    "Ing_Ed": [
       {
         "Ing": "101",
         "Ed": "102",
@@ -172,14 +222,21 @@
         "Fails": []
       }
     ],
-    "Lifecycle":[
+    "Lifecycle": [
       {
-        "Name" : "Application",
-        "States" : [
+        "Name": "Application",
+        "States": [
           "101",
           "102",
           "103",
           "104"
+        ]
+      },
+      {
+        "Name": "Application recovery",
+        "States": [
+          "401",
+          "204"
         ]
       }
     ]
