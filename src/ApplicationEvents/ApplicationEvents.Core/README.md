@@ -1,6 +1,6 @@
 # Patware.Diagnostics.ApplicationEvents.Core
 
-Structured application lifecycle events for `Microsoft.Extensions.Logging`.
+Structured application lifecycle and fatal-error events for `Microsoft.Extensions.Logging`.
 
 Group related events through `logger.Application`, with consistent event
 IDs, names, severity levels, and structured properties.
@@ -14,7 +14,7 @@ IDs, names, severity levels, and structured properties.
 ## Installation
 
 ```shell
-dotnet add package Patware.Diagnostics.ApplicationEvents.Core --version 0.0.1
+dotnet add package Patware.Diagnostics.ApplicationEvents.Core --version 0.0.2
 ```
 
 Core provides event methods. Your application chooses and configures its
@@ -50,20 +50,41 @@ stages; they are not a complete application startup/shutdown implementation.
 
 ## Available events
 
-All four events use the Information log level.
-
-| ID | Event name | Method | Structured properties |
-|---|---|---|---|
-| 101 | `Application_Starting` | `Starting()` | None |
-| 102 | `Application_Started` | `Started(double totalMilliseconds)` | `TotalMilliseconds` |
-| 103 | `Application_Stopping` | `Stopping(string reason)` | `Reason` |
-| 104 | `Application_Stopped` | `Stopped()` | None |
+| ID | Event name | Level | Method | Structured properties |
+|---|---|---|---|---|
+| 101 | `Application_Starting` | Information | `Starting()` | None |
+| 102 | `Application_Started` | Information | `Started(double totalMilliseconds)` | `TotalMilliseconds` |
+| 103 | `Application_Stopping` | Information | `Stopping(string reason)` | `Reason` |
+| 104 | `Application_Stopped` | Information | `Stopped()` | None |
+| 701 | `Application_UnhandledException` | Critical | `UnhandledException(Exception exception)` | None; exception passed separately |
 
 The methods preserve structured values so compatible logging providers can
 store and query them independently of the rendered message.
 
 Accessing `logger.Application` preserves the original logger category.
 It does not create a new logging category or emit an event.
+
+## Reporting an unrecoverable exception
+
+At a top-level application failure boundary, pass the original exception:
+
+```csharp
+logger.Application.UnhandledException(exception);
+```
+
+Here, `exception` is the non-null `Exception` caught at that boundary.
+The method passes it through `ILogger`'s exception channel, preserving its
+type, stack trace, and inner exceptions for logging providers. It is not
+converted into a message-template property or string.
+
+Reserve event 701 for failures that prevent the application from continuing
+normally. A recoverable operation or request failure does not imply an
+application-ending failure. A top-level catch block may report this event
+and initiate shutdown even though it has caught the exception.
+
+The method only emits a record. It does not install exception handlers,
+initiate shutdown, terminate the process, or flush providers. Passing null
+throws `ArgumentNullException`, including when Critical logging is disabled.
 
 ## Lifecycle behavior
 
@@ -75,8 +96,9 @@ It does not create a new logging category or emit an event.
 - Emit `Stopped()` after application cleanup completes. It does not prove
   that the operating-system process has exited.
 - Abrupt termination can prevent shutdown events from being emitted.
-- Normal logging filters apply; disabling Information logging suppresses
-  these events.
+- Normal logging filters apply. Events 101–104 require Information logging;
+  event 701 requires Critical logging. A Warning minimum level suppresses
+  101–104 but still permits 701.
 
 ## Automatic host integration
 
@@ -91,8 +113,11 @@ builder.AddPatwareApplicationEvents();
 Import `Patware.Diagnostics.ApplicationEvents.Hosting` for that extension.
 
 The Hosting package depends on Core and also offers optional console
-formatting. Avoid manually emitting the same lifecycle events when automatic
-logging is enabled for that host.
+formatting and opt-in runtime unhandled-exception reporting through
+`options.LogUnhandledExceptions = true`. This observer has limited coverage;
+application-specific failure boundaries may still need explicit logging.
+Avoid manually emitting the same lifecycle events when automatic logging
+is enabled for that host.
 
 ## Source and license
 

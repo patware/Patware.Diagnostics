@@ -31,7 +31,10 @@ internal static class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddDebug();
 
-        builder.AddPatwareApplicationEvents();
+        builder.AddPatwareApplicationEvents(options =>
+        {
+            options.LogUnhandledExceptions = true;
+        });
 
         builder.Services.AddSingleton<App>();
         builder.Services.AddSingleton<MainWindow>();

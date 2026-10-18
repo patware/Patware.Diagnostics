@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 builder.AddPatwareApplicationEvents(options =>
 {
     options.FormatLogs = true;
+    options.LogUnhandledExceptions = true;
 });
 
 var app = builder.Build();

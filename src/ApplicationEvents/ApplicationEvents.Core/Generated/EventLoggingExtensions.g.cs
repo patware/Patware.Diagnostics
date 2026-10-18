@@ -83,7 +83,7 @@ public readonly struct ApplicationEvents
     /// <para>Emit immediately before beginning application initialization.</para>
     /// <para>Framework or bootstrap logging may occur before this event; it does not guarantee that it is the first log record in the process.</para>
     /// <para>Command-line arguments are excluded because they may contain sensitive information.</para>
-    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -103,7 +103,7 @@ public readonly struct ApplicationEvents
     /// <para>Measure totalMilliseconds from the beginning of initialization represented by Application_Starting to successful completion represented by this event.</para>
     /// <para>The caller supplies the elapsed duration; the logging method does not start or stop a timer.</para>
     /// <para>Successful startup does not guarantee that every optional dependency is healthy.</para>
-    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -122,7 +122,7 @@ public readonly struct ApplicationEvents
     /// <para>Emit when application shutdown begins, before performing shutdown cleanup.</para>
     /// <para>The reason describes the known cause of shutdown. Use &apos;Unknown&apos; when the cause is unavailable rather than inferring one.</para>
     /// <para>This event indicates that shutdown has begun, not that cleanup has completed.</para>
-    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -140,7 +140,7 @@ public readonly struct ApplicationEvents
     /// <para>Emit after application shutdown cleanup completes, while logging remains available.</para>
     /// <para>This event describes completion of application shutdown cleanup; it does not prove that the operating-system process has exited.</para>
     /// <para>Abrupt termination may prevent this event from being emitted.</para>
-    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -149,6 +149,34 @@ public readonly struct ApplicationEvents
     public void Stopped()
     {
         ApplicationEventMessages.Stopped(Logger);
+    }
+
+    /// <summary>
+    /// Reports an unrecoverable exception at an application boundary.
+    /// </summary>
+    /// <param name="exception">The exception that reached the application boundary and prevents normal operation from continuing.</param>
+    /// <remarks>
+    /// <para>Emit when an exception reaches a top-level application boundary and the application cannot continue normally.</para>
+    /// <para>This event is intended for application-ending failures, not recoverable operation or request failures.</para>
+    /// <para>Unhandled means that lower-level application code did not recover from the exception; a top-level boundary may catch it to report the failure and initiate shutdown.</para>
+    /// <para>Pass the original exception so logging providers retain access to its type, stack trace, and inner exceptions.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>The exception argument must not be null, even when Critical logging is disabled.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not terminate the process, initiate shutdown, or install exception handlers.</para>
+    /// <para>Abrupt termination may prevent this event from being emitted or flushed.</para>
+    /// <para>Status: Stable. Introduced: 0.0.2.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">
+    /// The exception argument is null.
+    /// </exception>
+    public void UnhandledException(Exception @exception)
+    {
+      ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
+        ApplicationEventMessages.UnhandledException(Logger, @exception);
     }
 
 }
@@ -194,5 +222,13 @@ internal static partial class ApplicationEventMessages
         Message = "Application is Stopped")]
     internal static partial void Stopped(
         ILogger logger);
+
+    [LoggerMessage(
+        EventId = 701,
+        EventName = "Application_UnhandledException",
+        Level = LogLevel.Critical,
+        Message = "Application encountered an unrecoverable exception.")]
+    internal static partial void UnhandledException(
+        ILogger logger, Exception @exception);
 
 }

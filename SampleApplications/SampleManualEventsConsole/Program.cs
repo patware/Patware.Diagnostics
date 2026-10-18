@@ -61,10 +61,50 @@ startupTimer.Start();
 
 logger.Application.Starting();
 
-await host.StartAsync();
+bool shutdownAttempted = false;
 
-Console.WriteLine("Application is running. Press Ctrl+C to stop.");
+try
+{
+    await host.StartAsync();
 
-// Wait for a shutdown request and then execute the host's shutdown sequence.
-// The default console lifetime handles Ctrl+C.
-await host.WaitForShutdownAsync();
+    if (args.Contains("--simulate-fatal", StringComparer.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "Simulated unrecoverable application failure.",
+            new ArgumentException("Simulated invalid configuration."));
+    }
+
+    Console.WriteLine("Application is running. Press Ctrl+C to stop.");
+
+    // WaitForShutdownAsync executes the host shutdown sequence.
+    shutdownAttempted = true;
+    await host.WaitForShutdownAsync();
+}
+catch (Exception exception)
+{
+    // This boundary reports a failure that lower-level code did not recover.
+    // The process returns a failure code after cleanup.
+    Environment.ExitCode = 1;
+    logger.Application.UnhandledException(exception);
+}
+finally
+{
+    if (!shutdownAttempted)
+    {
+        // A startup or application failure bypassed WaitForShutdownAsync.
+        // Attempt bounded cleanup while logging is still available.
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
+
+        try
+        {
+            await host.StopAsync(timeout.Token);
+        }
+        catch (Exception cleanupException)
+        {
+            Environment.ExitCode = 1;
+            logger.LogError(
+                cleanupException,
+                "Cleanup after application failure did not complete.");
+        }
+    }
+}

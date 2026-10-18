@@ -9,7 +9,7 @@
     <PackageId>Patware.Diagnostics.ApplicationEvents.Hosting</PackageId>
     <AssemblyName>Patware.Diagnostics.ApplicationEvents.Hosting</AssemblyName>
     <RootNamespace>Patware.Diagnostics.ApplicationEvents.Hosting</RootNamespace>
-    
+
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
     <Description>
@@ -26,4 +26,7 @@
     <ProjectReference Include="../ApplicationEvents.Core/ApplicationEvents.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ApplicationEvents.Hosting.Tests" />
+  </ItemGroup>
 </Project>
