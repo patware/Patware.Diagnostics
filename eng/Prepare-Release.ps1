@@ -48,6 +48,13 @@ try {
     $builtDirectory = & (Join-Path $root 'Build.ps1') `
         -OutputDirectory $packageDirectory
 
+    # Build.ps1 must return only the package directory.
+    # Catch accidental success-stream output before parameter binding obscures it.
+    if ($builtDirectory -isnot [string] -or [string]::IsNullOrWhiteSpace($builtDirectory))
+    {
+        throw 'Build.ps1 must return exactly one package-directory string. Route command output through Out-Host.'
+    }
+
     $validation = & (Join-Path $PSScriptRoot 'Test-Packages.ps1') `
         -PackageDirectory $builtDirectory `
         -ExpectedCommit $commit

@@ -7,6 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
+    <!-- Permit compilation on Linux CI by restoring Windows targeting packs.
+        Running and interactively testing this application still requires Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
     <!-- EnableDefaultApplicationDefinition=false prevents generation of the entry point that calls new App().
           With the SDK’s default XAML items enabled, App.xaml is instead compiled as a Page,
           retaining its generated InitializeComponent().
