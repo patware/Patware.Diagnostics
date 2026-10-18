@@ -31,7 +31,7 @@ internal static class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddDebug();
 
-        builder.AddPatwareApplicationEvents(options =>
+        builder.AddApplicationEvents(options =>
         {
             options.LogUnhandledExceptions = true;
         });

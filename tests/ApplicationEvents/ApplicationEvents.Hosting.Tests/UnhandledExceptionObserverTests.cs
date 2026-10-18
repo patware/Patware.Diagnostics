@@ -42,10 +42,10 @@ public sealed class UnhandledExceptionObserverTests
         builder.Services.AddSingleton<IUnhandledExceptionSource>(source);
         builder.Services.AddSingleton<IHostLifetime>(new TestHostLifetime());
 
-        builder.AddPatwareApplicationEvents(options =>
+        builder.AddApplicationEvents(options =>
             options.LogUnhandledExceptions = enabled);
 
-        builder.AddPatwareApplicationEvents(options =>
+        builder.AddApplicationEvents(options =>
             options.LogUnhandledExceptions = enabled);
 
         using IHost host = builder.Build();

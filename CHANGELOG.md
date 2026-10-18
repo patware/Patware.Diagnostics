@@ -7,6 +7,15 @@ published releases are identified by package and release date below.
 
 ### Added
 
+- `AddApplicationEvents()` registration overloads.
+
+### Deprecated
+
+- `AddPatwareApplicationEvents()` overloads now forward to `AddApplicationEvents()`
+  and emit an obsolete warning. Existing behavior is preserved.
+- The proposed `AddPatwareDiagnostics()` name is replaced by `AddDiagnostics()`
+  for the planned all-in-one API; neither umbrella method is implemented yet.
+
 ## 0.0.2 - 2026-10-17
 
 ### Added

@@ -58,7 +58,7 @@ internal static class Program
         builder.Logging.SetMinimumLevel(LogLevel.Information);
         builder.Logging.AddProvider(capture);
 
-        builder.AddPatwareApplicationEvents(options =>
+        builder.AddApplicationEvents(options =>
             options.FormatLogs = formatLogs);
 
         if (formatLogs)

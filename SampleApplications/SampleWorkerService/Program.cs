@@ -6,7 +6,7 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 // Subscribe the exception observer before starting the worker
 // under the host's default sequential startup policy.
-builder.AddPatwareApplicationEvents(options =>
+builder.AddApplicationEvents(options =>
 {
     options.FormatLogs = true;
     options.LogUnhandledExceptions = true;

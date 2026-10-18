@@ -107,7 +107,7 @@ For applications using the .NET Generic Host, use
 automatically:
 
 ```csharp
-builder.AddPatwareApplicationEvents();
+builder.AddApplicationEvents();
 ```
 
 Import `Patware.Diagnostics.ApplicationEvents.Hosting` for that extension.
