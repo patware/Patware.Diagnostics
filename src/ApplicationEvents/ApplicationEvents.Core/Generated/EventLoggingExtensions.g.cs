@@ -83,6 +83,19 @@ public readonly struct ApplicationEvents
     /// <para>Emit immediately before beginning application initialization.</para>
     /// <para>Framework or bootstrap logging may occur before this event; it does not guarantee that it is the first log record in the process.</para>
     /// <para>Command-line arguments are excluded because they may contain sensitive information.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Started">102 — Application_Started</see>.
+    /// </para>
+    /// <para>
+    /// Expected following event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Started">102 — Application_Started</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -103,6 +116,23 @@ public readonly struct ApplicationEvents
     /// <para>Measure totalMilliseconds from the beginning of initialization represented by Application_Starting to successful completion represented by this event.</para>
     /// <para>The caller supplies the elapsed duration; the logging method does not start or stop a timer.</para>
     /// <para>Successful startup does not guarantee that every optional dependency is healthy.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Starting">101 — Application_Starting</see>.
+    /// </para>
+    /// <para>
+    /// Expected preceding event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Starting">101 — Application_Starting</see>.
+    /// </para>
+    /// <para>
+    /// Expected following event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopping">103 — Application_Stopping</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -122,6 +152,23 @@ public readonly struct ApplicationEvents
     /// <para>Emit when application shutdown begins, before performing shutdown cleanup.</para>
     /// <para>The reason describes the known cause of shutdown. Use &apos;Unknown&apos; when the cause is unavailable rather than inferring one.</para>
     /// <para>This event indicates that shutdown has begun, not that cleanup has completed.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopped">104 — Application_Stopped</see>.
+    /// </para>
+    /// <para>
+    /// Expected preceding event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Started">102 — Application_Started</see>.
+    /// </para>
+    /// <para>
+    /// Expected following event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopped">104 — Application_Stopped</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -140,6 +187,19 @@ public readonly struct ApplicationEvents
     /// <para>Emit after application shutdown cleanup completes, while logging remains available.</para>
     /// <para>This event describes completion of application shutdown cleanup; it does not prove that the operating-system process has exited.</para>
     /// <para>Abrupt termination may prevent this event from being emitted.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopping">103 — Application_Stopping</see>.
+    /// </para>
+    /// <para>
+    /// Expected preceding event in &apos;Application&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopping">103 — Application_Stopping</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.1.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -149,6 +209,70 @@ public readonly struct ApplicationEvents
     public void Stopped()
     {
         ApplicationEventMessages.Stopped(Logger);
+    }
+
+    /// <summary>
+    /// Indicates that the application has recovered from degraded operation.
+    /// </summary>
+    /// <remarks>
+    /// <para>Emit when the application leaves degraded mode after all conditions causing reduced functionality have cleared.</para>
+    /// <para>This event describes recovery of the application instance as a whole. Recovery of one dependency is insufficient if another condition still leaves the application degraded.</para>
+    /// <para>Use Application_Started for successful startup; do not emit this event merely because startup completed.</para>
+    /// <para>Emit once per transition back to normal operation rather than on every successful health check.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not change application state, deduplicate calls, or verify recovery.</para>
+    /// <para>This event does not establish that a load balancer has resumed routing traffic to this instance.</para>
+    /// <para>The corresponding degraded-mode event is 401, Application_InDegradedMode.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Expected preceding event in &apos;Application recovery&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InDegradedMode">401 — Application_InDegradedMode</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.3.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void InNormalMode()
+    {
+        ApplicationEventMessages.InNormalMode(Logger);
+    }
+
+    /// <summary>
+    /// Indicates that a recoverable problem has reduced application functionality while allowing operation to continue.
+    /// </summary>
+    /// <param name="reason">A non-sensitive description of the condition and its effect on application functionality.</param>
+    /// <remarks>
+    /// <para>Emit when the application first establishes degraded operation or transitions from normal to degraded operation.</para>
+    /// <para>Examples include serving cached data or temporarily disabling an optional feature while a dependency is unavailable.</para>
+    /// <para>A failed dependency check alone is insufficient: the application must determine that its functionality is reduced.</para>
+    /// <para>Emit once when entering degraded mode rather than repeatedly while the condition persists. The application owns transition detection.</para>
+    /// <para>Planned maintenance, deployment draining, and intentional traffic withdrawal do not by themselves constitute degraded operation.</para>
+    /// <para>Describe the operational impact without including credentials, connection strings, configuration values, or personal data.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not activate a fallback, change readiness, throttle traffic, or initiate recovery.</para>
+    /// <para>Emit 204, Application_InNormalMode, when all conditions causing degraded operation have cleared.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Expected following event in &apos;Application recovery&apos;:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InNormalMode">204 — Application_InNormalMode</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.3.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void InDegradedMode(string @reason)
+    {
+        ApplicationEventMessages.InDegradedMode(Logger, @reason);
     }
 
     /// <summary>
@@ -222,6 +346,22 @@ internal static partial class ApplicationEventMessages
         Message = "Application is Stopped")]
     internal static partial void Stopped(
         ILogger logger);
+
+    [LoggerMessage(
+        EventId = 204,
+        EventName = "Application_InNormalMode",
+        Level = LogLevel.Information,
+        Message = "Application has returned to normal operation.")]
+    internal static partial void InNormalMode(
+        ILogger logger);
+
+    [LoggerMessage(
+        EventId = 401,
+        EventName = "Application_InDegradedMode",
+        Level = LogLevel.Warning,
+        Message = "Application is operating in degraded mode. Reason: {Reason}")]
+    internal static partial void InDegradedMode(
+        ILogger logger, string @reason);
 
     [LoggerMessage(
         EventId = 701,

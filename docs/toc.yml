@@ -9,3 +9,4 @@ items:
   href: adr/toc.yml
 - name: API reference
   href: api/toc.yml
+  topicHref: api/index.md

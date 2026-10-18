@@ -1,36 +1,36 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-    [string] $OutputDirectory
+  [string] $OutputDirectory
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Invoke-DotNet {
-    & dotnet @args | Out-Host
+  & dotnet @args | Out-Host
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet failed with exit code $LASTEXITCODE."
-    }
+  if ($LASTEXITCODE -ne 0) {
+    throw "dotnet failed with exit code $LASTEXITCODE."
+  }
 }
 
 $root = $PSScriptRoot
 $version = (Get-Content (Join-Path $root 'VERSION') -Raw).Trim()
 
 if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
-    throw "Invalid release version: '$version'."
+  throw "Invalid release version: '$version'."
 }
 
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
-    $attempt = [Guid]::NewGuid().ToString('N')
-    $OutputDirectory = "artifacts/packages/v$version/$attempt"
+  $attempt = [Guid]::NewGuid().ToString('N')
+  $OutputDirectory = "artifacts/packages/v$version/$attempt"
 }
 
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory, $root)
 
 if (Test-Path -LiteralPath $OutputDirectory) {
-    throw "Output directory already exists: $OutputDirectory"
+  throw "Output directory already exists: $OutputDirectory"
 }
 
 # Keep release scope explicit so unfinished projects are never packed.
@@ -38,76 +38,105 @@ $catalog = Import-PowerShellDataFile (Join-Path $root 'eng/Packages.psd1')
 $libraries = @($catalog.Packages)
 
 if ($libraries.Count -eq 0) {
-    throw 'The release package list is empty.'
+  throw 'The release package list is empty.'
 }
 
 $testProjects = @(
-    Get-ChildItem (Join-Path $root 'tests') -Recurse -Filter '*.csproj' |
-        Sort-Object FullName
+  Get-ChildItem (Join-Path $root 'tests') -Recurse -Filter '*.csproj' |
+  Sort-Object FullName
 )
 
 if ($testProjects.Count -eq 0) {
-    throw 'No library test projects were found.'
+  throw 'No library test projects were found.'
 }
+
+$sampleApplications = Get-ChildItem (Join-Path $root 'SampleApplications') -Recurse -Filter *.csproj
+
+if ($sampleApplications.Count -eq 0) {
+  throw 'No sample applications were found.'
+}
+
 
 Push-Location $root
 
 try {
-    $commit = & git rev-parse HEAD
+  $commit = & git rev-parse HEAD
 
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Cannot determine the source commit.'
-    }
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Cannot determine the source commit.'
+  }
 
-    $properties = @(
-        '-p:ContinuousIntegrationBuild=true'
-        "-p:Version=$version"
-        "-p:RepositoryCommit=$commit"
-    )
+  $properties = @(
+    '-p:ContinuousIntegrationBuild=true'
+    "-p:Version=$version"
+    "-p:RepositoryCommit=$commit"
+  )
 
-    New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
+  New-Item -ItemType Directory -Path $OutputDirectory | Out-Null
 
-    foreach ($library in $libraries)
-    {
-      Write-Host "`nBuilding $($library.PackageId)"
+  foreach ($library in $libraries) {
+    Write-Host "`nBuilding $($library.PackageId)"
 
-      $project = Join-Path $root $library.Project
+    $project = Join-Path $root $library.Project
 
-      Invoke-DotNet build $project `
-          --configuration Release `
-          --no-incremental `
-          @properties
-    }
+    Invoke-DotNet build $project `
+      --configuration Release `
+      --no-incremental `
+      @properties
+  }
 
-    foreach ($project in $testProjects) {
-        Write-Host "`nTesting $($project.BaseName)"
+  foreach ($project in $testProjects) {
+    Write-Host "`nTesting $($project.BaseName)"
 
-        Invoke-DotNet test `
-            --project $project.FullName `
-            --configuration Release `
-            @properties `
-            -- --minimum-expected-tests 1
-    }
+    Invoke-DotNet test `
+      --project $project.FullName `
+      --configuration Release `
+      @properties `
+      -- --minimum-expected-tests 1
+  }
 
+  foreach ($library in $libraries) {
+    Write-Host "`nPacking $($library.PackageId)"
 
-    foreach ($library in $libraries)
-    {
-      Write-Host "`nPacking $($library.PackageId)"
+    $project = Join-Path $root $library.Project
 
-      $project = Join-Path $root $library.Project
+    Invoke-DotNet pack $project `
+      --configuration Release `
+      --no-build `
+      --no-restore `
+      --output $OutputDirectory `
+      @properties
+  }
 
-      Invoke-DotNet pack $project `
-          --configuration Release `
-          --no-build `
-          --no-restore `
-          --output $OutputDirectory `
-          @properties
-    }
+  foreach ($sample in $sampleApplications) {
+    Write-Host "`nBuilding sample application $($sample.BaseName)"
 
-    # The success stream contains only this path.
-    # Callers can capture it while build/test output remains visible.
-    Write-Output $OutputDirectory
+    Invoke-DotNet build $sample.FullName `
+      --configuration Release `
+      @properties
+  }
+
+  Write-Host "`nGenerating documentation site"
+  Write-Host "   - API Documentation"
+
+  & docfx metadata docs/docfx.json | Out-Host
+
+  if ($LASTEXITCODE -ne 0) {
+    throw 'API documentation generation failed.'
+  }
+
+  Write-Host "   - MD Documentation"
+
+  & docfx build docs/docfx.json --warningsAsErrors | Out-Host
+
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Documentation generation failed.'
+  }
+
+  # The success stream contains only this path.
+  # Callers can capture it while build/test output remains visible.
+  Write-Output $OutputDirectory
 }
 finally {
-    Pop-Location
+  Pop-Location
 }

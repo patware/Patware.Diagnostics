@@ -16,13 +16,16 @@ New to Patware.Diagnostics? Start here to learn how to install, configure, and u
 
 Understand the architectural principles, design decisions, and conventions behind the libraries.
 
-### [Application Events](application-events.md)
+### [Application Events](architecture/EVENT-CATALOG.md)
 
 Explore standardized event identifiers, classifications, structured messages, and their operational meaning.
 
-### [Metrics](metrics.md)
+### Metrics
 
 Learn about the metrics exposed by the libraries, their semantics, and how to integrate them with your monitoring infrastructure.
+
+>_[NOTE!]
+>_ Metrics are planned, not implemented yet.
 
 ## API Reference
 

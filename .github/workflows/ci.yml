@@ -35,6 +35,14 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Install DocFX
+        run: |
+          dotnet tool install --global docfx --version 2.81.0
+
+          if ($LASTEXITCODE -ne 0) {
+              throw 'DocFX installation failed.'
+          }
+
       - name: Build, test, and pack
         id: build
         run: |

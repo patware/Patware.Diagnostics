@@ -1,4 +1,5 @@
-# Generated API metadata and documentation site.
-/api/
+# Generated API metadata, except the authored landing page.
+/api/*
+!/api/index.md
 /_site/
 /.cache/

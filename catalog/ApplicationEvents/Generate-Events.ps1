@@ -232,10 +232,16 @@ function ConvertTo-MarkdownText {
   param([string]$Value)
 
   $singleLine = [regex]::Replace($Value, '\s+', ' ').Trim()
-  $encoded = [System.Net.WebUtility]::HtmlEncode($singleLine)
 
-  # Prevent catalog prose from becoming unintended Markdown formatting.
-  return [regex]::Replace($encoded, '([\\`*_{}\[\]()#+.!|>-])', '\$1')
+  # Escape Markdown punctuation before HTML encoding so the escaping
+  # cannot corrupt numeric character references such as &#39;.
+  $escaped = [regex]::Replace(
+    $singleLine,
+    '([\\`*_{}\[\]()#+.!|>-])',
+    '\$1'
+  )
+
+  return [System.Net.WebUtility]::HtmlEncode($escaped)
 }
 
 function ConvertTo-CSharpLiteral {
@@ -271,9 +277,104 @@ function Normalize-GeneratedText {
   return $Value.Replace("`r`n", "`n").Replace("`r", "`n").TrimEnd() + "`n"
 }
 
+function New-EventRelationship {
+  param(
+    [string]$TargetId,
+    [string]$Description
+  )
+
+  $target = $catalog.Ids[$TargetId]
+  $label = "$TargetId — $($target.EventName)"
+
+  # Retired events remain in the catalog but have no generated public API.
+  # Render their identity as text rather than creating an unresolved cref.
+  @{
+    DescriptionXml = ConvertTo-XmlText $Description
+    DescriptionMd  = ConvertTo-MarkdownText $Description
+    LabelXml       = ConvertTo-XmlText $label
+    LabelMd        = ConvertTo-MarkdownText $label
+    Anchor         = "event-$TargetId"
+    HasPublicApi   = $target.Status -ne 'Retired'
+    CrefXml        = ConvertTo-XmlText (
+      'Patware.Diagnostics.ApplicationEvents.{0}Events.{1}' -f (
+        $target.Category,
+        $target.Method
+      )
+    )
+  }
+}
+
+function Get-EventRelationships {
+  param([string]$EventId)
+
+  foreach ($pair in (
+    $catalog.Related.Ing_Ed | Sort-Object { [int]$_.Ing }
+  )) {
+    if ($pair.Ing -eq $EventId) {
+      New-EventRelationship `
+        -TargetId $pair.Ed `
+        -Description 'Corresponding completion:'
+
+      foreach ($failureId in ($pair.Fails | Sort-Object { [int]$_ })) {
+        New-EventRelationship `
+          -TargetId $failureId `
+          -Description 'Possible failure outcome:'
+      }
+    }
+
+    if ($pair.Ed -eq $EventId) {
+      New-EventRelationship `
+        -TargetId $pair.Ing `
+        -Description 'Corresponding beginning:'
+    }
+
+    if ($EventId -in $pair.Fails) {
+      New-EventRelationship `
+        -TargetId $pair.Ing `
+        -Description 'Beginning associated with this failure:'
+    }
+  }
+
+  foreach ($lifecycle in $catalog.Related.Lifecycle) {
+    $states = @($lifecycle.States)
+
+    for ($index = 0; $index -lt $states.Count; $index++) {
+      if ($states[$index] -ne $EventId) {
+        continue
+      }
+
+      if ($index -gt 0) {
+        New-EventRelationship `
+          -TargetId $states[$index - 1] `
+          -Description (
+            "Expected preceding event in '$($lifecycle.Name)':"
+          )
+      }
+
+      if ($index + 1 -lt $states.Count) {
+        New-EventRelationship `
+          -TargetId $states[$index + 1] `
+          -Description (
+            "Expected following event in '$($lifecycle.Name)':"
+          )
+      }
+    }
+  }
+}
+
 $orderedEvents = @(
   $catalog.Ids.Values | Sort-Object EventId
 )
+
+$relationshipsById = @{}
+
+foreach ($eve in $orderedEvents) {
+  $eventId = [string]$eve.EventId
+
+  $relationshipsById[$eventId] = @(
+    Get-EventRelationships -EventId $eventId
+  )
+}
 
 $categoryModels = @()
 $categoryNames = [string[]]@($catalog.Categories.Keys)
@@ -325,6 +426,10 @@ foreach ($categoryName in $categoryNames) {
         foreach ($remark in $eve.Remarks) {
           @{ TextXml = ConvertTo-XmlText $remark }
         }
+      )
+      Relationships = $relationshipsById[[string]$eve.EventId]
+      HasRelationships = (
+        $relationshipsById[[string]$eve.EventId].Count -gt 0
       )
 
     }
@@ -379,6 +484,11 @@ $documentationEvents = @(
             }) -join ', '
         )
       )
+
+      Relationships = $relationshipsById[[string]$eve.EventId]
+      HasRelationships = (
+        $relationshipsById[[string]$eve.EventId].Count -gt 0
+      )
     }
   }
 )
@@ -399,12 +509,36 @@ $pairModels = @(
 
 $lifecycleModels = @(
   foreach ($lifecycle in $catalog.Related.Lifecycle) {
+    $states = @($lifecycle.States)
+
     @{
-      Name   = ConvertTo-MarkdownText $lifecycle.Name
-      # Preserve state order: it carries lifecycle meaning.
+      Name = ConvertTo-MarkdownText $lifecycle.Name
+
       States = @(
-        foreach ($stateId in $lifecycle.States) {
-          @{ Text = "$stateId — $($catalog.Ids[$stateId].EventName)" }
+        foreach ($stateId in $states) {
+          @{
+            Text = "$stateId — $($catalog.Ids[$stateId].EventName)"
+          }
+        }
+      )
+
+      Nodes = @(
+        foreach ($stateId in $states) {
+          @{
+            NodeId  = "event$stateId"
+            EventId = $stateId
+            # EventName is already constrained to identifier characters.
+            EventName = $catalog.Ids[$stateId].EventName
+          }
+        }
+      )
+
+      Edges = @(
+        for ($index = 0; $index + 1 -lt $states.Count; $index++) {
+          @{
+            From = "event$($states[$index])"
+            To   = "event$($states[$index + 1])"
+          }
         }
       )
     }
