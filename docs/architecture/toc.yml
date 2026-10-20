@@ -3,6 +3,8 @@ items:
   href: EVENT-CATALOG.md
 - name: Configuration validation events
   href: CONFIGURATION-VALIDATION.md
+- name: External operation events
+  href: EXTERNAL-OPERATIONS.md
 - name: Architecture
   href: ARCHITECTURE.md
 - name: Vision

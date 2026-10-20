@@ -25,6 +25,12 @@ Explore standardized event identifiers, classifications, structured messages, an
 Report validation attempts, individual setting results, and aggregate
 outcomes while preserving correlation and excluding sensitive values.
 
+### [External Operations](architecture/EXTERNAL-OPERATIONS.md)
+
+Report external operation timeouts with attempt correlation and original
+exceptions. Understand how operation failures relate to cached fallback,
+application degradation, and recovery.
+
 ### Metrics
 
 Learn about the metrics exposed by the libraries, their semantics, and how to integrate them with your monitoring infrastructure.

@@ -15,6 +15,9 @@ or reviews. Delete merged topic branches when they are no longer needed.
 
 ## Versions and releases
 
+See [Contributing changes and publishing releases](docs/development/RELEASING.md)
+for prerequisites, commands, candidate review, publication, and failure recovery.
+
 `VERSION` supplies the shared MSBuild version. Use `MAJOR.MINOR.PATCH`, optionally
 with a prerelease suffix. The current `0.x` series is under active development;
 review the changelog for compatibility changes before upgrading.

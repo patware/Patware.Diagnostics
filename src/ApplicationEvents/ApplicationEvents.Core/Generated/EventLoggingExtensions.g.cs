@@ -64,6 +64,26 @@ public static class LoggerEventCategories
             }
         }
 
+        /// <summary>
+        /// Gets the External event group.
+        /// </summary>
+        /// <remarks>
+        /// The returned value retains the original logger.
+        /// Accessing this property neither emits an event nor changes
+        /// the logger's category, configuration, or providers.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// The logger is null.
+        /// </exception>
+        public ExternalEvents External
+        {
+            get
+            {
+                ArgumentNullException.ThrowIfNull(logger);
+                return new ExternalEvents(logger);
+            }
+        }
+
     }
 }
 
@@ -628,5 +648,92 @@ internal static partial class ConfigurationEventMessages
         Message = "Configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.")]
     internal static partial void ValidationFailed(
         ILogger logger, string ConfigurationName, string ValidationId, string Reason);
+
+}
+
+/// <summary>
+/// Reports operations involving external dependencies. Operation outcomes do not automatically determine the application&apos;s operating mode.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Obtain this group through the logger's External property.
+/// </para>
+/// <para>
+/// This value type groups related events without allocating a separate
+/// category object on the managed heap for each property access.
+/// </para>
+/// <para>
+/// These methods emit events when explicitly called. They do not
+/// observe or perform lifecycle transitions automatically.
+/// </para>
+/// </remarks>
+public readonly struct ExternalEvents
+{
+    private readonly ILogger? _logger;
+
+    internal ExternalEvents(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    private ILogger Logger =>
+        _logger ?? throw new InvalidOperationException(
+            "Obtain this event group through a logger's External property.");
+
+    /// <summary>
+    /// Reports an external operation attempt that failed to complete within its timeout budget.
+    /// </summary>
+    /// <param name="externalName">The stable logical name of the external dependency, without credentials or request-specific data.</param>
+    /// <param name="operationName">The stable logical name of the operation that timed out.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <param name="timeoutMilliseconds">The configured timeout budget for this attempt, in milliseconds, rather than its measured elapsed duration.</param>
+    /// <param name="exception">The original exception associated with the confirmed timeout.</param>
+    /// <remarks>
+    /// <para>Emit when the caller establishes that an external operation attempt timed out.</para>
+    /// <para>An operation can time out while establishing a connection or while awaiting the result of an already connected operation.</para>
+    /// <para>Cancellation alone does not establish a timeout. Do not emit this event for user cancellation or application shutdown.</para>
+    /// <para>An OperationCanceledException is appropriate when the caller has established that the operation&apos;s timeout caused cancellation.</para>
+    /// <para>The exception is required even when Error logging is disabled. Pass the original exception through the logging exception channel rather than converting it to a message-template property.</para>
+    /// <para>Emit once per failed attempt at the boundary responsible for reporting the dependency operation. Avoid logging the same timeout again at each layer.</para>
+    /// <para>OperationId identifies an individual attempt. A higher-level scope or trace can correlate several attempts belonging to the same logical operation.</para>
+    /// <para>TimeoutMilliseconds describes the configured budget, not measured elapsed time. Cancellation observation and cleanup can occur after that budget expires.</para>
+    /// <para>A timeout establishes that the caller did not obtain a result within its budget. It does not establish that the remote operation stopped or that it produced no side effects.</para>
+    /// <para>This event reports a failed operation attempt. It does not establish that the dependency is permanently unavailable or that administrator intervention is immediately required.</para>
+    /// <para>Emit Application_InDegradedMode separately only when application functionality becomes reduced. Emit Application_InNormalMode only when the application subsequently recovers from that degradation.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not cancel operations, retry requests, manage a circuit breaker, or change application state.</para>
+    /// <para>Status: Stable. Introduced: 0.0.5.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">
+    /// The exception argument is null.
+    /// </exception>
+    public void OperationTimedOut(string @externalName, string @operationName, string @operationId, double @timeoutMilliseconds, Exception @exception)
+    {
+      ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
+        ExternalEventMessages.OperationTimedOut(Logger, @externalName, @operationName, @operationId, @timeoutMilliseconds, @exception);
+    }
+
+}
+
+/// <summary>
+/// Implements External event emission using generated logging methods.
+/// </summary>
+/// <remarks>
+/// Keeping these methods internal prevents implementation details from
+/// appearing in the public logger API. Microsoft supplies their bodies
+/// through logging source generation.
+/// </remarks>
+internal static partial class ExternalEventMessages
+{
+    [LoggerMessage(
+        EventId = 601,
+        EventName = "External_OperationTimedOut",
+        Level = LogLevel.Error,
+        Message = "External operation timed out. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Timeout: {TimeoutMilliseconds} milliseconds.")]
+    internal static partial void OperationTimedOut(
+        ILogger logger, string ExternalName, string OperationName, string OperationId, double TimeoutMilliseconds, Exception Exception);
 
 }
