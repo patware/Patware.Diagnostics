@@ -44,6 +44,26 @@ public static class LoggerEventCategories
             }
         }
 
+        /// <summary>
+        /// Gets the Configuration event group.
+        /// </summary>
+        /// <remarks>
+        /// The returned value retains the original logger.
+        /// Accessing this property neither emits an event nor changes
+        /// the logger's category, configuration, or providers.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// The logger is null.
+        /// </exception>
+        public ConfigurationEvents Configuration
+        {
+            get
+            {
+                ArgumentNullException.ThrowIfNull(logger);
+                return new ConfigurationEvents(logger);
+            }
+        }
+
     }
 }
 
@@ -329,7 +349,7 @@ internal static partial class ApplicationEventMessages
         Level = LogLevel.Information,
         Message = "Application is Started.  Elapsed: {TotalMilliseconds} milliseconds")]
     internal static partial void Started(
-        ILogger logger, double @totalMilliseconds);
+        ILogger logger, double TotalMilliseconds);
 
     [LoggerMessage(
         EventId = 103,
@@ -337,7 +357,7 @@ internal static partial class ApplicationEventMessages
         Level = LogLevel.Information,
         Message = "Application is stopping.  Reason: {Reason}")]
     internal static partial void Stopping(
-        ILogger logger, string @reason);
+        ILogger logger, string Reason);
 
     [LoggerMessage(
         EventId = 104,
@@ -361,7 +381,7 @@ internal static partial class ApplicationEventMessages
         Level = LogLevel.Warning,
         Message = "Application is operating in degraded mode. Reason: {Reason}")]
     internal static partial void InDegradedMode(
-        ILogger logger, string @reason);
+        ILogger logger, string Reason);
 
     [LoggerMessage(
         EventId = 701,
@@ -369,6 +389,244 @@ internal static partial class ApplicationEventMessages
         Level = LogLevel.Critical,
         Message = "Application encountered an unrecoverable exception.")]
     internal static partial void UnhandledException(
-        ILogger logger, Exception @exception);
+        ILogger logger, Exception Exception);
+
+}
+
+/// <summary>
+/// Reports validation of candidate configurations and their individual settings. Successful validation does not imply that a candidate has been applied.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Obtain this group through the logger's Configuration property.
+/// </para>
+/// <para>
+/// This value type groups related events without allocating a separate
+/// category object on the managed heap for each property access.
+/// </para>
+/// <para>
+/// These methods emit events when explicitly called. They do not
+/// observe or perform lifecycle transitions automatically.
+/// </para>
+/// </remarks>
+public readonly struct ConfigurationEvents
+{
+    private readonly ILogger? _logger;
+
+    internal ConfigurationEvents(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    private ILogger Logger =>
+        _logger ?? throw new InvalidOperationException(
+            "Obtain this event group through a logger's Configuration property.");
+
+    /// <summary>
+    /// Indicates that validation of a candidate configuration is beginning.
+    /// </summary>
+    /// <param name="configurationName">The non-sensitive logical name of the configuration being validated.</param>
+    /// <param name="validationId">The unique identifier for this validation attempt, shared by its detail and outcome events.</param>
+    /// <remarks>
+    /// <para>Emit immediately before evaluating the candidate against its validation rules.</para>
+    /// <para>Use a new validation identifier for each attempt, including retries and configuration reloads.</para>
+    /// <para>A completed evaluation emits exactly one aggregate outcome: Configuration_Validated or Configuration_ValidationFailed.</para>
+    /// <para>Per-setting results are optional and can appear between the beginning and aggregate outcome.</para>
+    /// <para>Validate a consistent candidate snapshot so all results describe the same configuration.</para>
+    /// <para>Cancellation, a validator exception, or process termination can prevent an aggregate outcome. Absence of an outcome does not prove the candidate is invalid.</para>
+    /// <para>Calling this method only emits a record; it does not perform validation or enforce event ordering.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validated">112 — Configuration_Validated</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.ValidationFailed">507 — Configuration_ValidationFailed</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.4.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Validating(string @configurationName, string @validationId)
+    {
+        ConfigurationEventMessages.Validating(Logger, @configurationName, @validationId);
+    }
+
+    /// <summary>
+    /// Indicates that a setting passed all checks applicable to that setting in this attempt.
+    /// </summary>
+    /// <param name="configurationName">The logical configuration name used by the beginning event.</param>
+    /// <param name="validationId">The identifier of the validation attempt containing this result.</param>
+    /// <param name="settingName">The non-sensitive name or relative path of the validated setting.</param>
+    /// <remarks>
+    /// <para>Optionally emit after the setting passes its applicable validation checks.</para>
+    /// <para>A valid setting does not establish that the entire configuration is valid.</para>
+    /// <para>Emit at most one success result for a setting in an attempt, after its applicable checks complete.</para>
+    /// <para>A successful check of one rule is insufficient if another applicable rule fails.</para>
+    /// <para>This event can describe ordinary validation success and does not necessarily indicate recovery from an earlier failure.</para>
+    /// <para>The setting value is intentionally excluded because configuration can contain sensitive information.</para>
+    /// <para>Status: Stable. Introduced: 0.0.4.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ValueIsValid(string @configurationName, string @validationId, string @settingName)
+    {
+        ConfigurationEventMessages.ValueIsValid(Logger, @configurationName, @validationId, @settingName);
+    }
+
+    /// <summary>
+    /// Indicates that a candidate configuration passed all required validation checks.
+    /// </summary>
+    /// <param name="configurationName">The logical configuration name used by the beginning event.</param>
+    /// <param name="validationId">The identifier of the successfully completed validation attempt.</param>
+    /// <remarks>
+    /// <para>Emit once when the completed evaluation establishes that the candidate satisfies all required validation rules.</para>
+    /// <para>Use the same configuration name and validation identifier as Configuration_Validating.</para>
+    /// <para>Do not emit this event merely because validation finished; a rejected candidate produces Configuration_ValidationFailed.</para>
+    /// <para>Success is defined by the declared rules. It does not establish external connectivity unless connectivity was explicitly checked.</para>
+    /// <para>This event does not indicate that the candidate has been applied or that application degradation has cleared.</para>
+    /// <para>Per-setting success records may be omitted without changing the meaning of this aggregate result.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validating">110 — Configuration_Validating</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.4.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Validated(string @configurationName, string @validationId)
+    {
+        ConfigurationEventMessages.Validated(Logger, @configurationName, @validationId);
+    }
+
+    /// <summary>
+    /// Indicates that a candidate configuration setting failed a validation rule.
+    /// </summary>
+    /// <param name="configurationName">The logical configuration name used by the beginning event.</param>
+    /// <param name="validationId">The identifier of the validation attempt containing this result.</param>
+    /// <param name="settingName">The non-sensitive name or relative path of the invalid setting.</param>
+    /// <param name="reason">A non-sensitive description of the failed rule and the correction required.</param>
+    /// <remarks>
+    /// <para>Optionally emit when evaluation establishes that a setting violates an applicable validation rule.</para>
+    /// <para>Multiple failure details may describe distinct failed rules for the same setting.</para>
+    /// <para>The candidate requires correction, but an earlier valid configuration may remain active.</para>
+    /// <para>Do not include setting values, credentials, connection strings, or personal data in the reason.</para>
+    /// <para>Do not treat an interrupted or unavailable validator as proof that a setting is invalid.</para>
+    /// <para>This detail record does not complete the attempt; the aggregate rejection is Configuration_ValidationFailed.</para>
+    /// <para>This event does not automatically imply application degradation or require shutdown.</para>
+    /// <para>Status: Stable. Introduced: 0.0.4.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ValueIsInvalid(string @configurationName, string @validationId, string @settingName, string @reason)
+    {
+        ConfigurationEventMessages.ValueIsInvalid(Logger, @configurationName, @validationId, @settingName, @reason);
+    }
+
+    /// <summary>
+    /// Indicates that validation concluded that a candidate configuration is invalid.
+    /// </summary>
+    /// <param name="configurationName">The logical configuration name used by the beginning event.</param>
+    /// <param name="validationId">The identifier of the validation attempt that rejected the candidate.</param>
+    /// <param name="reason">A non-sensitive summary of why the candidate failed validation.</param>
+    /// <remarks>
+    /// <para>Emit once when an evaluation rejects the candidate because one or more required validation rules failed.</para>
+    /// <para>Use the same configuration name and validation identifier as Configuration_Validating.</para>
+    /// <para>Fail-fast validation may conclude rejection without evaluating every remaining rule.</para>
+    /// <para>Group-level or cross-setting rules can fail even when every individually validated setting is valid.</para>
+    /// <para>The candidate requires correction. This event does not establish that the application has no usable configuration.</para>
+    /// <para>The application decides whether to retain an earlier configuration, disable a feature, or stop.</para>
+    /// <para>Cancellation or a validator exception alone does not establish an invalid candidate and must not be reported using this event.</para>
+    /// <para>Do not include configuration values or sensitive exception messages in the reason.</para>
+    /// <para>Calling this method only emits a record; it does not reject or apply configuration.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validating">110 — Configuration_Validating</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.4.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ValidationFailed(string @configurationName, string @validationId, string @reason)
+    {
+        ConfigurationEventMessages.ValidationFailed(Logger, @configurationName, @validationId, @reason);
+    }
+
+}
+
+/// <summary>
+/// Implements Configuration event emission using generated logging methods.
+/// </summary>
+/// <remarks>
+/// Keeping these methods internal prevents implementation details from
+/// appearing in the public logger API. Microsoft supplies their bodies
+/// through logging source generation.
+/// </remarks>
+internal static partial class ConfigurationEventMessages
+{
+    [LoggerMessage(
+        EventId = 110,
+        EventName = "Configuration_Validating",
+        Level = LogLevel.Information,
+        Message = "Validating configuration {ConfigurationName}. Validation: {ValidationId}.")]
+    internal static partial void Validating(
+        ILogger logger, string ConfigurationName, string ValidationId);
+
+    [LoggerMessage(
+        EventId = 111,
+        EventName = "Configuration_ValueIsValid",
+        Level = LogLevel.Information,
+        Message = "Setting {SettingName} in configuration {ConfigurationName} passed validation. Validation: {ValidationId}.")]
+    internal static partial void ValueIsValid(
+        ILogger logger, string ConfigurationName, string ValidationId, string SettingName);
+
+    [LoggerMessage(
+        EventId = 112,
+        EventName = "Configuration_Validated",
+        Level = LogLevel.Information,
+        Message = "Configuration {ConfigurationName} passed validation. Validation: {ValidationId}.")]
+    internal static partial void Validated(
+        ILogger logger, string ConfigurationName, string ValidationId);
+
+    [LoggerMessage(
+        EventId = 506,
+        EventName = "Configuration_ValueIsInvalid",
+        Level = LogLevel.Warning,
+        Message = "Setting {SettingName} in configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.")]
+    internal static partial void ValueIsInvalid(
+        ILogger logger, string ConfigurationName, string ValidationId, string SettingName, string Reason);
+
+    [LoggerMessage(
+        EventId = 507,
+        EventName = "Configuration_ValidationFailed",
+        Level = LogLevel.Warning,
+        Message = "Configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.")]
+    internal static partial void ValidationFailed(
+        ILogger logger, string ConfigurationName, string ValidationId, string Reason);
 
 }

@@ -49,3 +49,16 @@ Tests should explicitly prove that the library does **not** emit events for ambi
 ## Failure tests
 
 Verify that logging-provider failures or optional enrichment failures do not unexpectedly crash functional application paths, subject to the guarantees of `Microsoft.Extensions.Logging` itself.
+
+## Configuration validation event contracts
+
+ConfigurationValidationEventsTests verifies all five configuration event
+identities, levels, templates, and exact structured property sets.
+
+Coverage includes filtering, literal argument preservation, event-group
+initialization, interleaved attempt correlation, and explicit emission
+without deduplication or inferred aggregate/application-mode events.
+
+These are emitter contract tests. They do not establish that an application
+validates configuration correctly or emits exactly one outcome per attempt;
+those responsibilities require tests of the application's validator.

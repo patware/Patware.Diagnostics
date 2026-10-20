@@ -390,9 +390,16 @@ foreach ($categoryName in $categoryNames) {
 
     $argumentModels = @(
       foreach ($argument in $eve.Arguments) {
+        # Internal logging parameters use PascalCase without verbatim prefixes.
+        # This avoids reserved keywords and prevents Microsoft's fallback
+        # generator from exposing an '@' prefix in structured property names.
+        # Public method parameters retain their existing names and order.
+        $internalName =
+          $argument.Name.Substring(0, 1).ToUpperInvariant() +
+          $argument.Name.Substring(1)
+
         @{
-          # Verbatim identifiers also support C# keyword parameter names.
-          Declaration = ", $($argument.ValueType) @$($argument.Name)"
+          Declaration = ", $($argument.ValueType) $internalName"
           Name = $argument.Name
           SummaryXml = ConvertTo-XmlText $argument.Summary
           IsException = $argument.ValueType -ceq 'Exception'

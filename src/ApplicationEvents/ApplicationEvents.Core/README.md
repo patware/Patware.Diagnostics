@@ -1,9 +1,10 @@
 # Patware.Diagnostics.ApplicationEvents.Core
 
-Structured application lifecycle and fatal-error events for `Microsoft.Extensions.Logging`.
+Structured application lifecycle, operating-mode, configuration-validation,
+and fatal-error events for `Microsoft.Extensions.Logging`.
 
-Group related events through `logger.Application`, with consistent event
-IDs, names, severity levels, and structured properties.
+Group related events through `logger.Application` and `logger.Configuration`,
+with consistent event IDs, names, severity levels, and structured properties.
 
 ## Requirements
 
@@ -14,7 +15,7 @@ IDs, names, severity levels, and structured properties.
 ## Installation
 
 ```shell
-dotnet add package Patware.Diagnostics.ApplicationEvents.Core --version 0.0.2
+dotnet add package Patware.Diagnostics.ApplicationEvents.Core
 ```
 
 Core provides event methods. Your application chooses and configures its
@@ -56,7 +57,15 @@ stages; they are not a complete application startup/shutdown implementation.
 | 102 | `Application_Started` | Information | `Started(double totalMilliseconds)` | `TotalMilliseconds` |
 | 103 | `Application_Stopping` | Information | `Stopping(string reason)` | `Reason` |
 | 104 | `Application_Stopped` | Information | `Stopped()` | None |
+| 110 | `Configuration_Validating` | Information | `Configuration.Validating(...)` | `ConfigurationName`, `ValidationId` |
+| 111 | `Configuration_ValueIsValid` | Information | `Configuration.ValueIsValid(...)` | `ConfigurationName`, `ValidationId`, `SettingName` |
+| 112 | `Configuration_Validated` | Information | `Configuration.Validated(...)` | `ConfigurationName`, `ValidationId` |
+| 204 | `Application_InNormalMode` | Information | `Application.InNormalMode()` | None |
+| 401 | `Application_InDegradedMode` | Warning | `Application.InDegradedMode(string reason)` | `Reason` |
+| 506 | `Configuration_ValueIsInvalid` | Warning | `Configuration.ValueIsInvalid(...)` | `ConfigurationName`, `ValidationId`, `SettingName`, `Reason` |
+| 507 | `Configuration_ValidationFailed` | Warning | `Configuration.ValidationFailed(...)` | `ConfigurationName`, `ValidationId`, `Reason` |
 | 701 | `Application_UnhandledException` | Critical | `UnhandledException(Exception exception)` | None; exception passed separately |
+
 
 The methods preserve structured values so compatible logging providers can
 store and query them independently of the rendered message.
