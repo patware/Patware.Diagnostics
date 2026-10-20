@@ -21,7 +21,7 @@ using IHost host = builder.Build();
 
 ILogger logger = host.Services.GetRequiredService<ILogger<Program>>();
 
-const string configurationName = "SampleBlazorApp";
+const string configurationName = "SampleWorkerService";
 
 string failedAttempt = Guid.NewGuid().ToString("N");
 
