@@ -117,8 +117,10 @@ generated reports out of commits.
 from [VERSION](VERSION). Do not introduce separate library version values for
 an ordinary contribution.
 
-Version changes and publication belong to release preparation, as described in
-the [branch guide](branch-guide.md).
+Version changes and publication belong to maintainer-coordinated release
+preparation. Follow [Contributing changes and publishing releases](docs/development/RELEASING.md)
+for the complete process, from branch creation through candidate validation
+and publication.
 
 For packaging changes, follow the local packaging instructions in
 [Getting started](docs/development/GETTING-STARTED.md). Inspect the resulting

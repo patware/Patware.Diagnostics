@@ -512,6 +512,53 @@ instance. Other log records may appear between related events. Missing
 records can also result from filtering, collection loss, or abrupt termination.
 
 
+<a id="event-601"></a>
+
+## 601 — External_OperationTimedOut
+
+Reports an external operation attempt that failed to complete within its timeout budget\.
+
+| Field | Value |
+| --- | --- |
+| API category | External |
+| Event class | Exceptional |
+| Default level | Error |
+| Status | Stable |
+| Introduced | 0.0.5 |
+
+### Usage
+
+```csharp
+logger.External.OperationTimedOut(@externalName, @operationName, @operationId, @timeoutMilliseconds, @exception);
+```
+
+**Trigger:** Emit when the caller establishes that an external operation attempt timed out\.
+
+**Message template:** External operation timed out\. Dependency: \{ExternalName\}\. Operation: \{OperationName\}\. Attempt: \{OperationId\}\. Timeout: \{TimeoutMilliseconds\} milliseconds\.
+
+### Arguments
+
+- `externalName` (`string`): The stable logical name of the external dependency, without credentials or request\-specific data\.
+- `operationName` (`string`): The stable logical name of the operation that timed out\.
+- `operationId` (`string`): The identifier of this individual operation attempt\. Use a different identifier for each retry\.
+- `timeoutMilliseconds` (`double`): The configured timeout budget for this attempt, in milliseconds, rather than its measured elapsed duration\.
+- `exception` (`Exception`): The original exception associated with the confirmed timeout\.
+
+### Remarks
+
+- An operation can time out while establishing a connection or while awaiting the result of an already connected operation\.
+- Cancellation alone does not establish a timeout\. Do not emit this event for user cancellation or application shutdown\.
+- An OperationCanceledException is appropriate when the caller has established that the operation&#39;s timeout caused cancellation\.
+- The exception is required even when Error logging is disabled\. Pass the original exception through the logging exception channel rather than converting it to a message\-template property\.
+- Emit once per failed attempt at the boundary responsible for reporting the dependency operation\. Avoid logging the same timeout again at each layer\.
+- OperationId identifies an individual attempt\. A higher\-level scope or trace can correlate several attempts belonging to the same logical operation\.
+- TimeoutMilliseconds describes the configured budget, not measured elapsed time\. Cancellation observation and cleanup can occur after that budget expires\.
+- A timeout establishes that the caller did not obtain a result within its budget\. It does not establish that the remote operation stopped or that it produced no side effects\.
+- This event reports a failed operation attempt\. It does not establish that the dependency is permanently unavailable or that administrator intervention is immediately required\.
+- Emit Application\_InDegradedMode separately only when application functionality becomes reduced\. Emit Application\_InNormalMode only when the application subsequently recovers from that degradation\.
+- Calling this method only emits a diagnostic record\. It does not cancel operations, retry requests, manage a circuit breaker, or change application state\.
+
+
 <a id="event-701"></a>
 
 ## 701 — Application_UnhandledException

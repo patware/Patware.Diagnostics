@@ -137,6 +137,12 @@ public partial class MainWindow : Window
     /// WPF resumes this handler on the dispatcher, keeping cache transitions
     /// and UI updates serialized. Repeated failures emit no additional 401,
     /// and successful startup does not produce recovery event 204.
+    /// <para>
+    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
+    /// and the original exception. Event 401 is emitted only when entering
+    /// degraded mode, and event 204 only after a successful refresh restores
+    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// </para>
     /// </remarks>
     private async void Refresh_Button_Click(object sender, RoutedEventArgs e)
     {
@@ -150,7 +156,10 @@ public partial class MainWindow : Window
         AvailabilityButton.IsEnabled = false;
         CatalogStatusText.Text = "Contacting the product service…";
 
-        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(2));
+        string operationId = Guid.NewGuid().ToString("N");
+        TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
+
+        using CancellationTokenSource timeout = new(timeoutBudget);
 
         using CancellationTokenSource request = CancellationTokenSource
             .CreateLinkedTokenSource(timeout.Token, _lifetime.ApplicationStopping);
@@ -191,9 +200,17 @@ public partial class MainWindow : Window
         {
             // Closing or shutting down is neither degradation nor recovery.
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException exception)
             when (timeout.IsCancellationRequested)
         {
+
+            _logger.External.OperationTimedOut(
+                externalName: "ProductService",
+                operationName: "FetchPrice",
+                operationId: operationId,
+                timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
+                exception: exception);
+
             if (!_isDegraded)
             {
                 _isDegraded = true;

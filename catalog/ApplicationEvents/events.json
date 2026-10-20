@@ -7,6 +7,10 @@
     "Configuration": {
       "Name": "Configuration",
       "Summary": "Reports validation of candidate configurations and their individual settings. Successful validation does not imply that a candidate has been applied."
+    },
+    "External": {
+      "Name": "External",
+      "Summary": "Reports operations involving external dependencies. Operation outcomes do not automatically determine the application's operating mode."
     }
   },
   "Ids": {
@@ -331,6 +335,59 @@
       "Status": "Stable",
       "Since": "0.0.4"
     },
+    "601": {
+      "EventId": 601,
+      "EventName": "External_OperationTimedOut",
+      "Category": "External",
+      "Method": "OperationTimedOut",
+      "EventClass": "Exceptional",
+      "LogLevel": "Error",
+      "Message": "External operation timed out. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Timeout: {TimeoutMilliseconds} milliseconds.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The stable logical name of the external dependency, without credentials or request-specific data."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The stable logical name of the operation that timed out."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this individual operation attempt. Use a different identifier for each retry."
+        },
+        {
+          "Name": "timeoutMilliseconds",
+          "ValueType": "double",
+          "Summary": "The configured timeout budget for this attempt, in milliseconds, rather than its measured elapsed duration."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "Exception",
+          "Summary": "The original exception associated with the confirmed timeout."
+        }
+      ],
+      "Summary": "Reports an external operation attempt that failed to complete within its timeout budget.",
+      "Trigger": "Emit when the caller establishes that an external operation attempt timed out.",
+      "Remarks": [
+        "An operation can time out while establishing a connection or while awaiting the result of an already connected operation.",
+        "Cancellation alone does not establish a timeout. Do not emit this event for user cancellation or application shutdown.",
+        "An OperationCanceledException is appropriate when the caller has established that the operation's timeout caused cancellation.",
+        "The exception is required even when Error logging is disabled. Pass the original exception through the logging exception channel rather than converting it to a message-template property.",
+        "Emit once per failed attempt at the boundary responsible for reporting the dependency operation. Avoid logging the same timeout again at each layer.",
+        "OperationId identifies an individual attempt. A higher-level scope or trace can correlate several attempts belonging to the same logical operation.",
+        "TimeoutMilliseconds describes the configured budget, not measured elapsed time. Cancellation observation and cleanup can occur after that budget expires.",
+        "A timeout establishes that the caller did not obtain a result within its budget. It does not establish that the remote operation stopped or that it produced no side effects.",
+        "This event reports a failed operation attempt. It does not establish that the dependency is permanently unavailable or that administrator intervention is immediately required.",
+        "Emit Application_InDegradedMode separately only when application functionality becomes reduced. Emit Application_InNormalMode only when the application subsequently recovers from that degradation.",
+        "Calling this method only emits a diagnostic record. It does not cancel operations, retry requests, manage a circuit breaker, or change application state."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.5"
+    },
     "701": {
       "EventId": 701,
       "EventName": "Application_UnhandledException",
@@ -390,7 +447,7 @@
     "Exceptional": {
       "Name": "Exceptional",
       "No": 6,
-      "Summary": "External, out of our control incidents, like timeouts/unavailable external systems, missing dependency that prevents the app from running.  Immediate intervention by an administrator is required.  Let's be clear, Exceptional doesn't mean so good it's exceptional, it's the opposite."
+      "Summary": "Failures involving external dependencies, such as operation timeouts or unavailable services. Application impact and the need for intervention depend on recovery options, persistence, and operational context."
     },
     "Catastrophic": {
       "Name": "Catastrophic",

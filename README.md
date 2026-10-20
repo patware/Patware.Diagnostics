@@ -11,7 +11,7 @@ Developers shouldn't have to reinvent logging conventions, memorize event IDs, o
 **One registration. Meaningful diagnostics. Minimal effort.**
 
 ```csharp
-builder.AddDiagnostics();
+builder.AddApplicationEvents();
 ```
 
 The goal is simple:
@@ -47,7 +47,7 @@ TODO: How to use instructions
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddDiagnostics();
+builder.AddApplicationEvents();
 
 var app = builder.Build();
 

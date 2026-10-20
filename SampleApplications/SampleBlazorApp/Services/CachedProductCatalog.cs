@@ -100,6 +100,12 @@ public sealed class CachedProductCatalog : IDisposable
     /// overwrite a newer result or produce contradictory mode transitions.
     /// Timeouts preserve the last successful cache. Host shutdown cancellation
     /// is propagated rather than reported as application degradation.
+    /// <para>
+    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
+    /// and the original exception. Event 401 is emitted only when entering
+    /// degraded mode, and event 204 only after a successful refresh restores
+    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// </para>
     /// </remarks>
     /// <exception cref="OperationCanceledException">
     /// The application is shutting down.
@@ -112,7 +118,10 @@ public sealed class CachedProductCatalog : IDisposable
 
         try
         {
-            using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(2));
+            string operationId = Guid.NewGuid().ToString("N");
+            TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
+
+            using CancellationTokenSource timeout = new(timeoutBudget);
 
             using CancellationTokenSource request = CancellationTokenSource.CreateLinkedTokenSource(stopping, timeout.Token);
 
@@ -136,10 +145,17 @@ public sealed class CachedProductCatalog : IDisposable
                     _logger.Application.InNormalMode();
                 }
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException exception)
                 when (timeout.IsCancellationRequested
                       && !stopping.IsCancellationRequested)
             {
+                _logger.External.OperationTimedOut(
+                    externalName: "ProductService",
+                    operationName: "FetchProducts",
+                    operationId: operationId,
+                    timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
+                    exception: exception);
+
                 CatalogSnapshot previous = Snapshot;
 
                 Volatile.Write(

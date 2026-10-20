@@ -109,13 +109,21 @@ public sealed class Worker(
     /// The worker executes refreshes sequentially, so no additional locking
     /// is needed for its cache or operating-mode state.
     /// Recovery is recorded only after a successful response replaces the cache.
+    /// <para>
+    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
+    /// and the original exception. Event 401 is emitted only when entering
+    /// degraded mode, and event 204 only after a successful refresh restores
+    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// </para>
     /// </remarks>
     private async Task RefreshPriceAsync(
         string degradedFilePath,
         CancellationToken stoppingToken)
     {
-        using CancellationTokenSource timeout = new(
-            TimeSpan.FromSeconds(2));
+        string operationId = Guid.NewGuid().ToString("N");
+        TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
+
+        using CancellationTokenSource timeout = new(timeoutBudget);
 
         using CancellationTokenSource request =
             CancellationTokenSource.CreateLinkedTokenSource(
@@ -144,10 +152,19 @@ public sealed class Worker(
                 price,
                 _cachedAt);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException exception)
             when (timeout.IsCancellationRequested
                   && !stoppingToken.IsCancellationRequested)
         {
+
+            logger.External.OperationTimedOut(
+                externalName: "ProductService",
+                operationName: "FetchPrice",
+                operationId: operationId,
+                timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
+                exception: exception);
+
+
             if (!_isDegraded)
             {
                 _isDegraded = true;

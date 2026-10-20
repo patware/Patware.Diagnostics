@@ -3,6 +3,28 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.5 - 2026-10-20
+
+### Added
+
+- Event 601, `External_OperationTimedOut`, through
+  `logger.External.OperationTimedOut()`.
+  - Reports the dependency, operation, attempt identifier, and configured
+    timeout budget.
+  - Preserves the original exception through the logging exception channel.
+- Timeout event demonstrations in the Blazor, Worker Service, and WPF samples,
+  alongside cached fallback and application degradation/recovery events.
+- Contract tests covering event identity, severity, structured properties,
+  exception preservation, filtering, argument guards, and separate attempts.
+- External operation guidance with a Mermaid diagram illustrating timeout,
+  cached fallback, and recovery behavior.
+
+### Changed
+
+- Clarified the Exceptional event class: external failures do not necessarily
+  require immediate administrator intervention.
+- Linked contributor and branch guidance to the complete release procedure.
+
 ## 0.0.4 - 2026-10-19
 
 ### Added
