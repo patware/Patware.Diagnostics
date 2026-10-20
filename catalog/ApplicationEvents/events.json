@@ -3,6 +3,10 @@
     "Application": {
       "Name": "Application",
       "Summary": "Events that are related to the lifetime of the application, like starting, pausing, stopped.  A typical app's lifecycle will be: Starting -> Started [-> Pausing -> Paused [-> Resuming -> Resumed]] -> Stopping -> Stopped."
+    },
+    "Configuration": {
+      "Name": "Configuration",
+      "Summary": "Reports validation of candidate configurations and their individual settings. Successful validation does not imply that a candidate has been applied."
     }
   },
   "Ids": {
@@ -91,6 +95,108 @@
       "Status": "Stable",
       "Since": "0.0.1"
     },
+    "110": {
+      "EventId": 110,
+      "EventName": "Configuration_Validating",
+      "Category": "Configuration",
+      "Method": "Validating",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Validating configuration {ConfigurationName}. Validation: {ValidationId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the configuration being validated."
+        },
+        {
+          "Name": "validationId",
+          "ValueType": "string",
+          "Summary": "The unique identifier for this validation attempt, shared by its detail and outcome events."
+        }
+      ],
+      "Summary": "Indicates that validation of a candidate configuration is beginning.",
+      "Trigger": "Emit immediately before evaluating the candidate against its validation rules.",
+      "Remarks": [
+        "Use a new validation identifier for each attempt, including retries and configuration reloads.",
+        "A completed evaluation emits exactly one aggregate outcome: Configuration_Validated or Configuration_ValidationFailed.",
+        "Per-setting results are optional and can appear between the beginning and aggregate outcome.",
+        "Validate a consistent candidate snapshot so all results describe the same configuration.",
+        "Cancellation, a validator exception, or process termination can prevent an aggregate outcome. Absence of an outcome does not prove the candidate is invalid.",
+        "Calling this method only emits a record; it does not perform validation or enforce event ordering."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.4"
+    },
+    "111": {
+      "EventId": 111,
+      "EventName": "Configuration_ValueIsValid",
+      "Category": "Configuration",
+      "Method": "ValueIsValid",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Setting {SettingName} in configuration {ConfigurationName} passed validation. Validation: {ValidationId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The logical configuration name used by the beginning event."
+        },
+        {
+          "Name": "validationId",
+          "ValueType": "string",
+          "Summary": "The identifier of the validation attempt containing this result."
+        },
+        {
+          "Name": "settingName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive name or relative path of the validated setting."
+        }
+      ],
+      "Summary": "Indicates that a setting passed all checks applicable to that setting in this attempt.",
+      "Trigger": "Optionally emit after the setting passes its applicable validation checks.",
+      "Remarks": [
+        "A valid setting does not establish that the entire configuration is valid.",
+        "Emit at most one success result for a setting in an attempt, after its applicable checks complete.",
+        "A successful check of one rule is insufficient if another applicable rule fails.",
+        "This event can describe ordinary validation success and does not necessarily indicate recovery from an earlier failure.",
+        "The setting value is intentionally excluded because configuration can contain sensitive information."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.4"
+    },
+    "112": {
+      "EventId": 112,
+      "EventName": "Configuration_Validated",
+      "Category": "Configuration",
+      "Method": "Validated",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Configuration {ConfigurationName} passed validation. Validation: {ValidationId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The logical configuration name used by the beginning event."
+        },
+        {
+          "Name": "validationId",
+          "ValueType": "string",
+          "Summary": "The identifier of the successfully completed validation attempt."
+        }
+      ],
+      "Summary": "Indicates that a candidate configuration passed all required validation checks.",
+      "Trigger": "Emit once when the completed evaluation establishes that the candidate satisfies all required validation rules.",
+      "Remarks": [
+        "Use the same configuration name and validation identifier as Configuration_Validating.",
+        "Do not emit this event merely because validation finished; a rejected candidate produces Configuration_ValidationFailed.",
+        "Success is defined by the declared rules. It does not establish external connectivity unless connectivity was explicitly checked.",
+        "This event does not indicate that the candidate has been applied or that application degradation has cleared.",
+        "Per-setting success records may be omitted without changing the meaning of this aggregate result."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.4"
+    },
     "204": {
       "EventId": 204,
       "EventName": "Application_InNormalMode",
@@ -141,6 +247,89 @@
       ],
       "Status": "Stable",
       "Since": "0.0.3"
+    },
+    "506": {
+      "EventId": 506,
+      "EventName": "Configuration_ValueIsInvalid",
+      "Category": "Configuration",
+      "Method": "ValueIsInvalid",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Setting {SettingName} in configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The logical configuration name used by the beginning event."
+        },
+        {
+          "Name": "validationId",
+          "ValueType": "string",
+          "Summary": "The identifier of the validation attempt containing this result."
+        },
+        {
+          "Name": "settingName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive name or relative path of the invalid setting."
+        },
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": "A non-sensitive description of the failed rule and the correction required."
+        }
+      ],
+      "Summary": "Indicates that a candidate configuration setting failed a validation rule.",
+      "Trigger": "Optionally emit when evaluation establishes that a setting violates an applicable validation rule.",
+      "Remarks": [
+        "Multiple failure details may describe distinct failed rules for the same setting.",
+        "The candidate requires correction, but an earlier valid configuration may remain active.",
+        "Do not include setting values, credentials, connection strings, or personal data in the reason.",
+        "Do not treat an interrupted or unavailable validator as proof that a setting is invalid.",
+        "This detail record does not complete the attempt; the aggregate rejection is Configuration_ValidationFailed.",
+        "This event does not automatically imply application degradation or require shutdown."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.4"
+    },
+    "507": {
+      "EventId": 507,
+      "EventName": "Configuration_ValidationFailed",
+      "Category": "Configuration",
+      "Method": "ValidationFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The logical configuration name used by the beginning event."
+        },
+        {
+          "Name": "validationId",
+          "ValueType": "string",
+          "Summary": "The identifier of the validation attempt that rejected the candidate."
+        },
+        {
+          "Name": "reason",
+          "ValueType": "string",
+          "Summary": "A non-sensitive summary of why the candidate failed validation."
+        }
+      ],
+      "Summary": "Indicates that validation concluded that a candidate configuration is invalid.",
+      "Trigger": "Emit once when an evaluation rejects the candidate because one or more required validation rules failed.",
+      "Remarks": [
+        "Use the same configuration name and validation identifier as Configuration_Validating.",
+        "Fail-fast validation may conclude rejection without evaluating every remaining rule.",
+        "Group-level or cross-setting rules can fail even when every individually validated setting is valid.",
+        "The candidate requires correction. This event does not establish that the application has no usable configuration.",
+        "The application decides whether to retain an earlier configuration, disable a feature, or stop.",
+        "Cancellation or a validator exception alone does not establish an invalid candidate and must not be reported using this event.",
+        "Do not include configuration values or sensitive exception messages in the reason.",
+        "Calling this method only emits a record; it does not reject or apply configuration."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.4"
     },
     "701": {
       "EventId": 701,
@@ -220,6 +409,13 @@
         "Ing": "103",
         "Ed": "104",
         "Fails": []
+      },
+      {
+        "Ing": "110",
+        "Ed": "112",
+        "Fails": [
+          "507"
+        ]
       }
     ],
     "Lifecycle": [

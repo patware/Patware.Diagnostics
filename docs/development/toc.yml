@@ -5,3 +5,5 @@ items:
   href: GETTING-STARTED.md
 - name: Testing
   href: TESTING.md
+- name: Releasing
+  href: RELEASING.md

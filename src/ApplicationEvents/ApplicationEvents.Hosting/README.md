@@ -9,13 +9,15 @@ optional console formatting and runtime unhandled-exception reporting.
 - An application using the .NET Generic Host, including ASP.NET Core hosts.
 
 ```shell
-dotnet add package Patware.Diagnostics.ApplicationEvents.Hosting --version 0.0.2
+dotnet add package Patware.Diagnostics.ApplicationEvents.Hosting
 ```
 
 This package depends on `Patware.Diagnostics.ApplicationEvents.Core`.
 A console application that constructs a Generic Host also needs
 `Microsoft.Extensions.Hosting`; ASP.NET Core applications obtain hosting
 support through their framework.
+
+Configuration validation events require version 0.0.4 or later.
 
 ## Automatic lifecycle logging
 

@@ -195,6 +195,139 @@ instance. Other log records may appear between related events. Missing
 records can also result from filtering, collection loss, or abrupt termination.
 
 
+<a id="event-110"></a>
+
+## 110 — Configuration_Validating
+
+Indicates that validation of a candidate configuration is beginning\.
+
+| Field | Value |
+| --- | --- |
+| API category | Configuration |
+| Event class | LowLevel |
+| Default level | Information |
+| Status | Stable |
+| Introduced | 0.0.4 |
+
+### Usage
+
+```csharp
+logger.Configuration.Validating(@configurationName, @validationId);
+```
+
+**Trigger:** Emit immediately before evaluating the candidate against its validation rules\.
+
+**Message template:** Validating configuration \{ConfigurationName\}\. Validation: \{ValidationId\}\.
+
+### Arguments
+
+- `configurationName` (`string`): The non\-sensitive logical name of the configuration being validated\.
+- `validationId` (`string`): The unique identifier for this validation attempt, shared by its detail and outcome events\.
+
+### Remarks
+
+- Use a new validation identifier for each attempt, including retries and configuration reloads\.
+- A completed evaluation emits exactly one aggregate outcome: Configuration\_Validated or Configuration\_ValidationFailed\.
+- Per\-setting results are optional and can appear between the beginning and aggregate outcome\.
+- Validate a consistent candidate snapshot so all results describe the same configuration\.
+- Cancellation, a validator exception, or process termination can prevent an aggregate outcome\. Absence of an outcome does not prove the candidate is invalid\.
+- Calling this method only emits a record; it does not perform validation or enforce event ordering\.
+
+### Related events
+
+- Corresponding completion: [112 — Configuration\_Validated](#event-112)
+- Possible failure outcome: [507 — Configuration\_ValidationFailed](#event-507)
+
+These relationships describe expected progression for the same application
+instance. Other log records may appear between related events. Missing
+records can also result from filtering, collection loss, or abrupt termination.
+
+
+<a id="event-111"></a>
+
+## 111 — Configuration_ValueIsValid
+
+Indicates that a setting passed all checks applicable to that setting in this attempt\.
+
+| Field | Value |
+| --- | --- |
+| API category | Configuration |
+| Event class | LowLevel |
+| Default level | Information |
+| Status | Stable |
+| Introduced | 0.0.4 |
+
+### Usage
+
+```csharp
+logger.Configuration.ValueIsValid(@configurationName, @validationId, @settingName);
+```
+
+**Trigger:** Optionally emit after the setting passes its applicable validation checks\.
+
+**Message template:** Setting \{SettingName\} in configuration \{ConfigurationName\} passed validation\. Validation: \{ValidationId\}\.
+
+### Arguments
+
+- `configurationName` (`string`): The logical configuration name used by the beginning event\.
+- `validationId` (`string`): The identifier of the validation attempt containing this result\.
+- `settingName` (`string`): The non\-sensitive name or relative path of the validated setting\.
+
+### Remarks
+
+- A valid setting does not establish that the entire configuration is valid\.
+- Emit at most one success result for a setting in an attempt, after its applicable checks complete\.
+- A successful check of one rule is insufficient if another applicable rule fails\.
+- This event can describe ordinary validation success and does not necessarily indicate recovery from an earlier failure\.
+- The setting value is intentionally excluded because configuration can contain sensitive information\.
+
+
+<a id="event-112"></a>
+
+## 112 — Configuration_Validated
+
+Indicates that a candidate configuration passed all required validation checks\.
+
+| Field | Value |
+| --- | --- |
+| API category | Configuration |
+| Event class | LowLevel |
+| Default level | Information |
+| Status | Stable |
+| Introduced | 0.0.4 |
+
+### Usage
+
+```csharp
+logger.Configuration.Validated(@configurationName, @validationId);
+```
+
+**Trigger:** Emit once when the completed evaluation establishes that the candidate satisfies all required validation rules\.
+
+**Message template:** Configuration \{ConfigurationName\} passed validation\. Validation: \{ValidationId\}\.
+
+### Arguments
+
+- `configurationName` (`string`): The logical configuration name used by the beginning event\.
+- `validationId` (`string`): The identifier of the successfully completed validation attempt\.
+
+### Remarks
+
+- Use the same configuration name and validation identifier as Configuration\_Validating\.
+- Do not emit this event merely because validation finished; a rejected candidate produces Configuration\_ValidationFailed\.
+- Success is defined by the declared rules\. It does not establish external connectivity unless connectivity was explicitly checked\.
+- This event does not indicate that the candidate has been applied or that application degradation has cleared\.
+- Per\-setting success records may be omitted without changing the meaning of this aggregate result\.
+
+### Related events
+
+- Corresponding beginning: [110 — Configuration\_Validating](#event-110)
+
+These relationships describe expected progression for the same application
+instance. Other log records may appear between related events. Missing
+records can also result from filtering, collection loss, or abrupt termination.
+
+
 <a id="event-204"></a>
 
 ## 204 — Application_InNormalMode
@@ -288,6 +421,97 @@ instance. Other log records may appear between related events. Missing
 records can also result from filtering, collection loss, or abrupt termination.
 
 
+<a id="event-506"></a>
+
+## 506 — Configuration_ValueIsInvalid
+
+Indicates that a candidate configuration setting failed a validation rule\.
+
+| Field | Value |
+| --- | --- |
+| API category | Configuration |
+| Event class | UnrecoverableWarning |
+| Default level | Warning |
+| Status | Stable |
+| Introduced | 0.0.4 |
+
+### Usage
+
+```csharp
+logger.Configuration.ValueIsInvalid(@configurationName, @validationId, @settingName, @reason);
+```
+
+**Trigger:** Optionally emit when evaluation establishes that a setting violates an applicable validation rule\.
+
+**Message template:** Setting \{SettingName\} in configuration \{ConfigurationName\} failed validation\. Reason: \{Reason\}\. Validation: \{ValidationId\}\.
+
+### Arguments
+
+- `configurationName` (`string`): The logical configuration name used by the beginning event\.
+- `validationId` (`string`): The identifier of the validation attempt containing this result\.
+- `settingName` (`string`): The non\-sensitive name or relative path of the invalid setting\.
+- `reason` (`string`): A non\-sensitive description of the failed rule and the correction required\.
+
+### Remarks
+
+- Multiple failure details may describe distinct failed rules for the same setting\.
+- The candidate requires correction, but an earlier valid configuration may remain active\.
+- Do not include setting values, credentials, connection strings, or personal data in the reason\.
+- Do not treat an interrupted or unavailable validator as proof that a setting is invalid\.
+- This detail record does not complete the attempt; the aggregate rejection is Configuration\_ValidationFailed\.
+- This event does not automatically imply application degradation or require shutdown\.
+
+
+<a id="event-507"></a>
+
+## 507 — Configuration_ValidationFailed
+
+Indicates that validation concluded that a candidate configuration is invalid\.
+
+| Field | Value |
+| --- | --- |
+| API category | Configuration |
+| Event class | UnrecoverableWarning |
+| Default level | Warning |
+| Status | Stable |
+| Introduced | 0.0.4 |
+
+### Usage
+
+```csharp
+logger.Configuration.ValidationFailed(@configurationName, @validationId, @reason);
+```
+
+**Trigger:** Emit once when an evaluation rejects the candidate because one or more required validation rules failed\.
+
+**Message template:** Configuration \{ConfigurationName\} failed validation\. Reason: \{Reason\}\. Validation: \{ValidationId\}\.
+
+### Arguments
+
+- `configurationName` (`string`): The logical configuration name used by the beginning event\.
+- `validationId` (`string`): The identifier of the validation attempt that rejected the candidate\.
+- `reason` (`string`): A non\-sensitive summary of why the candidate failed validation\.
+
+### Remarks
+
+- Use the same configuration name and validation identifier as Configuration\_Validating\.
+- Fail\-fast validation may conclude rejection without evaluating every remaining rule\.
+- Group\-level or cross\-setting rules can fail even when every individually validated setting is valid\.
+- The candidate requires correction\. This event does not establish that the application has no usable configuration\.
+- The application decides whether to retain an earlier configuration, disable a feature, or stop\.
+- Cancellation or a validator exception alone does not establish an invalid candidate and must not be reported using this event\.
+- Do not include configuration values or sensitive exception messages in the reason\.
+- Calling this method only emits a record; it does not reject or apply configuration\.
+
+### Related events
+
+- Beginning associated with this failure: [110 — Configuration\_Validating](#event-110)
+
+These relationships describe expected progression for the same application
+instance. Other log records may appear between related events. Missing
+records can also result from filtering, collection loss, or abrupt termination.
+
+
 <a id="event-701"></a>
 
 ## 701 — Application_UnhandledException
@@ -336,6 +560,10 @@ logger.Application.UnhandledException(@exception);
 - Beginning: 103 — Application_Stopping
   - Completion: 104 — Application_Stopped
   - No failure event is currently associated with this pair.
+
+- Beginning: 110 — Configuration_Validating
+  - Completion: 112 — Configuration_Validated
+  - Failure: 507 — Configuration_ValidationFailed
 
 ## Lifecycle sequences
 

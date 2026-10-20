@@ -15,6 +15,51 @@ builder.AddApplicationEvents(options =>
 
 using IHost host = builder.Build();
 
+/* The following code demonstrate how to raise configuration events */
+
+ILogger logger = host.Services.GetRequiredService<ILogger<Program>>();
+
+const string configurationName = "SampleConsole";
+
+string failedAttempt = Guid.NewGuid().ToString("N");
+
+logger.Configuration.Validating(configurationName, failedAttempt);
+
+logger.Configuration.ValueIsValid(
+    configurationName,
+    failedAttempt,
+    settingName: "BaseAddress");
+
+logger.Configuration.ValueIsInvalid(
+    configurationName,
+    failedAttempt,
+    settingName: "TimeoutSeconds",
+    reason: "Must be greater than zero");
+
+logger.Configuration.ValidationFailed(
+    configurationName,
+    failedAttempt,
+    reason: "TimeoutSeconds violates its required range");
+
+// Later, after the operator supplies a corrected candidate:
+string correctedAttempt = Guid.NewGuid().ToString("N");
+
+logger.Configuration.Validating(configurationName, correctedAttempt);
+
+logger.Configuration.ValueIsValid(
+    configurationName,
+    correctedAttempt,
+    settingName: "BaseAddress");
+
+logger.Configuration.ValueIsValid(
+    configurationName,
+    correctedAttempt,
+    settingName: "TimeoutSeconds");
+
+logger.Configuration.Validated(configurationName, correctedAttempt);
+
+/* End of Configuration testing */
+
 IHostApplicationLifetime lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
 
@@ -41,8 +86,6 @@ Console.WriteLine("  X       Simulate an unhandled exception (terminates the pro
 Console.WriteLine("  Q       Shut down gracefully");
 Console.WriteLine("  Ctrl+C  Shut down gracefully");
 Console.WriteLine();
-
-ILogger<Program> logger = host.Services.GetRequiredService<ILogger<Program>>();
 
 // The sample owns transition detection; event methods only emit records.
 bool isDegraded = false;

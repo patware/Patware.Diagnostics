@@ -3,6 +3,24 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.4 - 2026-10-19
+
+### Added
+
+- Configuration validation events through `logger.Configuration`:
+  - 110, `Configuration_Validating`.
+  - 111, `Configuration_ValueIsValid`.
+  - 112, `Configuration_Validated`.
+  - 506, `Configuration_ValueIsInvalid`.
+  - 507, `Configuration_ValidationFailed`.
+- Explicit configuration-name and validation-attempt correlation properties.
+- Generated relationships linking validation beginning to aggregate success
+  and failure outcomes.
+- Configuration event demonstrations in the sample applications.
+- Contract tests covering identities, severity, structured properties,
+  filtering, correlation, and stateless emission.
+- Configuration validation guidance with an illustrated outcome flow.
+
 ## 0.0.3 - 2026-10-18
 
 ### Added
