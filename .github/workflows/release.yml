@@ -151,82 +151,8 @@ jobs:
           path: artifacts/approved-release
 
       - name: Verify candidate identity and checksums
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $root = (Resolve-Path 'artifacts/approved-release').Path
-          $manifest = Get-Content "$root/manifest.json" -Raw |
-              ConvertFrom-Json
+        run: ./eng/Assert-ReleaseCandidate.ps1
 
-          if ($manifest.schemaVersion -ne 1 -or
-              $manifest.version -cne $env:REQUESTED_VERSION -or
-              $manifest.commit -ne $env:GITHUB_SHA -or
-              $manifest.tag -cne "v$env:REQUESTED_VERSION") {
-              throw 'Release manifest identity mismatch.'
-          }
-
-          foreach ($check in @(
-              'libraryTests',
-              'packageChecks',
-              'consumerSmoke'
-          )) {
-              if ($manifest.validation.$check -ne 'passed') {
-                  throw "Release validation did not pass: $check"
-              }
-          }
-
-          $catalog = Import-PowerShellDataFile './eng/Packages.psd1'
-          $releasePackages = @($catalog.Packages)
-
-          if ($releasePackages.Count -eq 0) {
-              throw 'The release package list is empty.'
-          }
-
-          $expectedPaths = @(
-              foreach ($package in $releasePackages) {
-                  foreach ($extension in @('nupkg', 'snupkg')) {
-                      "packages/$($package.PackageId).$($manifest.version).$extension"
-                  }
-              }
-          )
-
-          $files = @($manifest.files)
-          $actualPaths = @($files | ForEach-Object { $_.path })
-
-          # Compare exact identities, not just a prefix and total count.
-          # This also rejects duplicates, unexpected files, and missing packages.
-          if ($files.Count -ne $expectedPaths.Count -or
-              @($actualPaths | Sort-Object -Unique).Count -ne $expectedPaths.Count -or
-              (($actualPaths | Sort-Object) -join '|') -cne
-              (($expectedPaths | Sort-Object) -join '|')) {
-              throw 'Candidate files do not match the release package list.'
-          }
-
-          if ($manifest.validation.packageCount -ne $releasePackages.Count -or
-              $manifest.validation.symbolCount -ne $releasePackages.Count) {
-              throw 'Manifest validation counts do not match the release package list.'
-          }
-
-          foreach ($file in $files) {
-              $path = Join-Path $root $file.path
-              $item = Get-Item -LiteralPath $path
-              $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
-
-              if ($item.Length -ne $file.bytes -or $hash -ne $file.sha256) {
-                  throw "Artifact verification failed: $($file.path)"
-              }
-          }
-
-          if ($manifest.releaseNotes.path -cne 'release-notes.md') {
-              throw 'Unexpected release notes path.'
-          }
-
-          $notesHash = (
-              Get-FileHash "$root/release-notes.md" -Algorithm SHA256
-          ).Hash
-
-          if ($notesHash -ne $manifest.releaseNotes.sha256) {
-              throw 'Release notes checksum mismatch.'
-          }
 
       - name: Check that this version has not been released
         run: |
@@ -352,77 +278,93 @@ jobs:
               }
           }
 
-      - name: Wait for NuGet package availability
+  finalize:
+    name: Finalize published candidate
+    needs: [prepare, publish]
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+
+    permissions:
+      contents: write
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_VERSION: ${{ inputs.version }}
+
+    steps:
+      - name: Checkout the original release commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download the original approved candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.prepare.outputs.artifact-name }}
+          path: artifacts/approved-release
+
+      - name: Verify candidate identity and checksums
+        run: ./eng/Assert-ReleaseCandidate.ps1
+
+      - name: Verify existing GitHub release and assets
         run: |
-          $ErrorActionPreference = 'Stop'
-          $manifest = Get-Content `
-              'artifacts/approved-release/manifest.json' -Raw |
-              ConvertFrom-Json
+          $release = ./eng/Assert-GitHubReleaseCandidate.ps1
 
-          $version = $manifest.version
-          $pending = @(
-              foreach ($file in $manifest.files) {
-                  if ($file.path.EndsWith('.nupkg')) {
-                      $name = [IO.Path]::GetFileName($file.path)
-                      $suffix = ".$version.nupkg"
-
-                      $name.Substring(
-                          0,
-                          $name.Length - $suffix.Length
-                      ).ToLowerInvariant()
-                  }
-              }
-          )
-
-          $deadline = [DateTimeOffset]::UtcNow.AddMinutes(10)
-
-          while ($pending.Count -gt 0) {
-              $remaining = @(
-                  foreach ($id in $pending) {
-                      $url = "https://api.nuget.org/v3-flatcontainer/$id/$version/$id.$version.nupkg"
-
-                      try {
-                          $null = Invoke-WebRequest $url `
-                              -Method Head -TimeoutSec 20
-                      }
-                      catch {
-                          $response = $_.Exception.Response
-
-                          if ($null -eq $response -or
-                              [int]$response.StatusCode -ne 404) {
-                              throw
-                          }
-
-                          $id
-                      }
-                  }
-              )
-
-              $pending = $remaining
-
-              if ($pending.Count -eq 0) {
-                  break
-              }
-
-              if ([DateTimeOffset]::UtcNow -ge $deadline) {
-                  throw "NuGet availability timed out. Still waiting for: $($pending -join ', ')"
-              }
-
-              Write-Host "Waiting for NuGet indexing: $($pending -join ', ')"
-              Start-Sleep -Seconds 15
+          if ($release.isDraft) {
+              Write-Host 'The existing draft matches the approved candidate.'
+          }
+          else {
+              Write-Host 'The existing published release matches the approved candidate.'
           }
 
-      - name: Publish the GitHub release
+      - name: Wait for NuGet package availability
+        run: ./eng/Wait-NuGetAvailability.ps1 -TimeoutMinutes 60
+
+      - name: Complete the GitHub release
         run: |
-          $tag = "v$env:REQUESTED_VERSION"
+          $ErrorActionPreference = 'Stop'
 
-          gh release edit $tag `
-              --repo $env:GITHUB_REPOSITORY `
-              --draft=false
+          # Recheck after the wait: release state may have changed.
+          $release = ./eng/Assert-GitHubReleaseCandidate.ps1
 
-          if ($LASTEXITCODE -ne 0) {
-              throw 'Packages were uploaded, but the GitHub release could not be finalized.'
+          if ($release.isDraft) {
+              gh release edit $release.tagName `
+                  --repo $env:GITHUB_REPOSITORY `
+                  --draft=false
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw (
+                      'Packages were uploaded, but GitHub finalization failed. ' +
+                      'Rerun only the finalization job.'
+                  )
+              }
+
+              $release = ./eng/Assert-GitHubReleaseCandidate.ps1
+
+              if ($release.isDraft) {
+                  throw 'The GitHub release is still a draft.'
+              }
           }
 
           "## Published Patware.Diagnostics $env:REQUESTED_VERSION" >> $env:GITHUB_STEP_SUMMARY
-          "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$tag" >> $env:GITHUB_STEP_SUMMARY
+          "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$($release.tagName)" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Explain finalization recovery
+        if: ${{ failure() }}
+        run: |
+          @"
+          ## Finalization incomplete
+
+          The package-upload job succeeded. Inspect the failed step above.
+
+          After resolving the cause, rerun only **Finalize published candidate**
+          in this workflow run. Do not rerun all jobs or start a new publication
+          run for this version.
+
+          This job does not upload packages or authenticate with NuGet.
+          It reuses the original candidate and verifies the existing release.
+
+          A verification mismatch requires investigation, not bypassing checks.
+          "@ >> $env:GITHUB_STEP_SUMMARY
