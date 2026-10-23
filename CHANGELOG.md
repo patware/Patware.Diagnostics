@@ -3,6 +3,32 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.8 - Unpublished
+
+### Added
+
+- Event 501, `Configuration_LoadFailed`, through
+  `logger.Configuration.LoadFailed()`.
+  - Reports the configuration, logical source, loading-attempt identifier,
+    and reason code, with an optional exception.
+- Contract tests covering event identity, severity, structured properties,
+  exception preservation, filtering, and independent loading attempts.
+- Interactive configuration reloading in SampleConsole through the R key.
+  - Accepted settings control the keyboard-polling interval.
+  - Loading and validation failures retain the last accepted settings.
+  - Initial loading failures retain a valid built-in fallback.
+  - Expected loading failures produce concise Warning records, with
+    original exception details available separately at Debug.
+- Configuration-loading guidance distinguishing event 501 from
+  setting-validation and aggregate-validation failures.
+
+### Changed
+
+- Replaced SampleConsole's simulated startup validation block with actual
+  JSON loading, validation, and configuration application.
+- Added catalog-defined workflow guide links to generated category pages
+  and clarified beginning/completion relationship diagrams.
+
 ## 0.0.7 - 2026-10-23
 
 ### Added

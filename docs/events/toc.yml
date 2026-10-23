@@ -28,6 +28,8 @@ items:
     href: Event_111.md
   - name: 112 — Configuration_Validated
     href: Event_112.md
+  - name: 501 — Configuration_LoadFailed
+    href: Event_501.md
   - name: 506 — Configuration_ValueIsInvalid
     href: Event_506.md
   - name: 507 — Configuration_ValidationFailed

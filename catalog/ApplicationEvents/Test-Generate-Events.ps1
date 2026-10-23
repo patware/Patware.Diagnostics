@@ -35,18 +35,37 @@ function Assert-GeneratorFailure {
 }
 
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+
 $fixtureRoot = Join-Path $repositoryRoot ('artifacts/generator-tests/' + [Guid]::NewGuid().ToString('N'))
+
 $fixtureCatalogDirectory = Join-Path $fixtureRoot 'catalog/ApplicationEvents'
+
 $null = New-Item -ItemType Directory -Path $fixtureCatalogDirectory -Force
+
 foreach ($name in @('Generate-Events.ps1', 'events.json', 'events.schema.json')) {
   Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $fixtureCatalogDirectory
 }
+
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Templates') -Destination $fixtureCatalogDirectory -Recurse
+
 $generator = Join-Path $fixtureCatalogDirectory 'Generate-Events.ps1'
+
 $eventsDirectory = Join-Path $fixtureRoot 'docs/events'
 
 & $generator
+
 & $generator -Verify
+
+$configurationPage = Join-Path $eventsDirectory 'Category_Configuration.md'
+
+Assert-Contains $configurationPage '## Workflow guidance'
+Assert-Contains $configurationPage (
+  '[Configuration loading and validation](../architecture/CONFIGURATION-VALIDATION.md)'
+)
+Assert-Contains $configurationPage (
+  '## Beginning and completion relationships'
+)
+
 Assert-Contains (Join-Path $eventsDirectory 'index.md') '| EventId | Category | Method | EventClass | LogLevel |'
 Assert-Contains (Join-Path $eventsDirectory 'toc.yml') 'name: 101 — Application_Starting'
 Assert-Contains (Join-Path $eventsDirectory 'Event_101.md') 'xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Starting)'
@@ -77,6 +96,13 @@ $fixtureCatalog | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $fixtureC
 & $generator
 & $generator -Verify
 Assert-Contains (Join-Path $eventsDirectory 'Category_Empty.md') 'No events are currently defined'
+$emptyCategoryPage = Join-Path $eventsDirectory 'Category_Empty.md'
+
+Assert-Condition (
+  -not ([IO.File]::ReadAllText($emptyCategoryPage).Contains(
+    '## Workflow guidance'
+  ))
+) 'Categories without guides must not render an empty guidance section.'
 Assert-Contains (Join-Path $eventsDirectory 'Category_Historical.md') 'No public event group'
 Assert-Contains (Join-Path $eventsDirectory 'Event_799.md') 'This event is retired.'
 Assert-Condition (-not ([IO.File]::ReadAllText((Join-Path $eventsDirectory 'Event_799.md')).Contains('xref:'))) 'Retired events must not link to missing API methods.'

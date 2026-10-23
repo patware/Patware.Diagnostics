@@ -10,6 +10,18 @@
 No public event group is currently generated for this category.
 {{/HasPublicApi}}
 
+{{#HasGuides}}
+## Workflow guidance
+
+These guides explain application workflows, including optional detail
+events and failure paths beyond the beginning/completion relationships.
+
+{{#Guides}}
+- [{{{Title}}}]({{{Href}}})
+{{/Guides}}
+
+{{/HasGuides}}
+
 ## Events
 
 {{#HasEvents}}
@@ -19,7 +31,11 @@ No public event group is currently generated for this category.
 No events are currently defined for this category.
 {{/HasEvents}}
 
-## Related transitions
+## Beginning and completion relationships
+
+These diagrams show the beginning, completion, and failure outcomes
+explicitly declared in the catalog. Optional detail events and other
+category events may not participate.
 
 {{#Pairs}}
 ### {{Starting.EventId}} — {{Completed.EventId}}

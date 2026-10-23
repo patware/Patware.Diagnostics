@@ -25,7 +25,7 @@ Understand the architectural principles, design decisions, and conventions behin
 
 Explore standardized event identifiers, classifications, structured messages, and their operational meaning.
 
-### [Configuration Validation](architecture/CONFIGURATION-VALIDATION.md)
+### [Configuration loading and validation](architecture/CONFIGURATION-VALIDATION.md)
 
 Report validation attempts, individual setting results, and aggregate
 outcomes while preserving correlation and excluding sensitive values.

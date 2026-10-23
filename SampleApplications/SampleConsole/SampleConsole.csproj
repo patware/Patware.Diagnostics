@@ -16,4 +16,8 @@
     <ProjectReference Include="../SampleApplications.Shared/SampleApplications.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="sample-polling.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

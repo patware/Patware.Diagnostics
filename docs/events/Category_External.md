@@ -6,6 +6,7 @@ Reports operations involving external dependencies\. Operation outcomes do not a
 
 [All events](index.md) · [Category API reference](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents)
 
+
 ## Events
 
 | EventId | Category | Method | EventClass | LogLevel |
@@ -15,7 +16,11 @@ Reports operations involving external dependencies\. Operation outcomes do not a
 | [601](Event_601.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [OperationTimedOut](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29) | Exceptional | Error |
 | [602](Event_602.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [ServiceUnavailable](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | Exceptional | Error |
 
-## Related transitions
+## Beginning and completion relationships
+
+These diagrams show the beginning, completion, and failure outcomes
+explicitly declared in the catalog. Optional detail events and other
+category events may not participate.
 
 No beginning/completion relationships are currently defined for this category.
 

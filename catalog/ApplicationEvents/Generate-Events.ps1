@@ -630,13 +630,32 @@ function New-EventTable {
 $documentationCategories = @(
   foreach ($categoryName in $categoryNames) {
     $events = @($documentationEvents | Where-Object { $_.Category -ceq $categoryName })
+
     $categoryEventIds = @($events | ForEach-Object { [string]$_.EventId })
+
     $pairs = @($pairModels | Where-Object {
         @($_.EventIds | Where-Object { $_ -in $categoryEventIds }).Count -gt 0
       })
+
     $lifecycles = @($lifecycleModels | Where-Object {
         @($_.EventIds | Where-Object { $_ -in $categoryEventIds }).Count -gt 0
       })
+
+    $categoryDefinition = $catalog.Categories[$categoryName]
+
+    # Guide paths are relative to docs. Generated category pages live in
+    # docs/events, so their links go up one level before using that path.
+    $guides = @(
+      if ($categoryDefinition.Contains('Guides')) {
+        foreach ($guide in $categoryDefinition.Guides) {
+          @{
+            Title = ConvertTo-MarkdownText $guide.Title
+            Href = "../$($guide.Path)"
+          }
+        }
+      }
+    )
+
     @{
       Name = $categoryName
       Summary = ConvertTo-MarkdownText $catalog.Categories[$categoryName].Summary
@@ -649,6 +668,8 @@ $documentationCategories = @(
       Pairs = $pairs
       Lifecycles = $lifecycles
       HasRelationships = $pairs.Count -gt 0 -or $lifecycles.Count -gt 0
+      Guides = $guides
+      HasGuides = $guides.Count -gt 0
     }
   }
 )
