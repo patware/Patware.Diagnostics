@@ -1,0 +1,116 @@
+#Requires -Version 7.4
+<#
+.SYNOPSIS
+Exercises documentation generation in an isolated fixture repository.
+
+.DESCRIPTION
+Checks deterministic output, category relationships, API links, retired and
+empty categories, stale-page removal, and protection of authored files.
+Fixtures are retained under ignored artifacts for inspection. Source catalog
+and generated documentation are never modified by this script.
+#>
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Assert-Condition {
+  param([bool]$Condition, [string]$Message)
+  if (-not $Condition) { throw $Message }
+}
+
+function Assert-Contains {
+  param([string]$Path, [string]$Text)
+  Assert-Condition ([IO.File]::ReadAllText($Path).Contains($Text)) "Missing '$Text' in $Path"
+}
+
+function Assert-GeneratorFailure {
+  param([string]$Expected, [switch]$Verify)
+  $failure = $null
+  try { & $generator -Verify:$Verify } catch { $failure = $_.Exception.Message }
+  Assert-Condition ($null -ne $failure -and $failure.Contains($Expected)) (
+    "Expected generator failure containing '$Expected'; received '$failure'."
+  )
+}
+
+$repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
+$fixtureRoot = Join-Path $repositoryRoot ('artifacts/generator-tests/' + [Guid]::NewGuid().ToString('N'))
+$fixtureCatalogDirectory = Join-Path $fixtureRoot 'catalog/ApplicationEvents'
+$null = New-Item -ItemType Directory -Path $fixtureCatalogDirectory -Force
+foreach ($name in @('Generate-Events.ps1', 'events.json', 'events.schema.json')) {
+  Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $fixtureCatalogDirectory
+}
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Templates') -Destination $fixtureCatalogDirectory -Recurse
+$generator = Join-Path $fixtureCatalogDirectory 'Generate-Events.ps1'
+$eventsDirectory = Join-Path $fixtureRoot 'docs/events'
+
+& $generator
+& $generator -Verify
+Assert-Contains (Join-Path $eventsDirectory 'index.md') '| EventId | Category | Method | EventClass | LogLevel |'
+Assert-Contains (Join-Path $eventsDirectory 'toc.yml') 'name: 101 — Application_Starting'
+Assert-Contains (Join-Path $eventsDirectory 'Event_101.md') 'xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Starting)'
+Assert-Contains (Join-Path $eventsDirectory 'Event_502.md') 'System.Exception%29'
+Assert-Contains (Join-Path $fixtureRoot 'docs/architecture/EVENT-CATALOG.md') '<a id="event-502"></a>'
+
+$sourceApi = Join-Path $repositoryRoot 'src/ApplicationEvents/ApplicationEvents.Core/Generated/EventLoggingExtensions.g.cs'
+$fixtureApi = Join-Path $fixtureRoot 'src/ApplicationEvents/ApplicationEvents.Core/Generated/EventLoggingExtensions.g.cs'
+Assert-Condition ((Get-FileHash $sourceApi).Hash -eq (Get-FileHash $fixtureApi).Hash) 'The documentation refactor changed the generated C# API.'
+
+$fixtureCatalogPath = Join-Path $fixtureCatalogDirectory 'events.json'
+$fixtureCatalog = Get-Content -LiteralPath $fixtureCatalogPath -Raw | ConvertFrom-Json -AsHashtable
+$fixtureCatalog.Categories.Empty = @{ Name = 'Empty'; Summary = 'No events yet.' }
+$fixtureCatalog.Categories.Historical = @{ Name = 'Historical'; Summary = 'Retired events only.' }
+$fixtureCatalog.Ids.'799' = @{
+  EventId = 799; EventName = 'Historical_Retired'; Category = 'Historical'
+  Method = 'Retired'; EventClass = 'Catastrophic'; LogLevel = 'Critical'
+  Message = 'Retired event.'; Arguments = @(); Summary = 'Historical event.'
+  Trigger = 'Retained for historical interpretation.'; Remarks = @()
+  Status = 'Retired'; Since = '0.0.7'
+}
+$configurationPair = $fixtureCatalog.Related.Ing_Ed | Where-Object Ing -eq '110'
+$configurationPair.Fails += '502'
+$fixtureCatalog.Related.Lifecycle += @{
+  Name = 'Cross category'; States = @('101', '502', '204')
+}
+$fixtureCatalog | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $fixtureCatalogPath -Encoding utf8
+& $generator
+& $generator -Verify
+Assert-Contains (Join-Path $eventsDirectory 'Category_Empty.md') 'No events are currently defined'
+Assert-Contains (Join-Path $eventsDirectory 'Category_Historical.md') 'No public event group'
+Assert-Contains (Join-Path $eventsDirectory 'Event_799.md') 'This event is retired.'
+Assert-Condition (-not ([IO.File]::ReadAllText((Join-Path $eventsDirectory 'Event_799.md')).Contains('xref:'))) 'Retired events must not link to missing API methods.'
+Assert-Contains (Join-Path $eventsDirectory 'Category_External.md') 'event110 --> event112'
+Assert-Contains (Join-Path $eventsDirectory 'Category_External.md') 'event110 -->|Failure| event502'
+Assert-Contains (Join-Path $eventsDirectory 'Category_External.md') 'event101 --> event502'
+Assert-Contains (Join-Path $eventsDirectory 'Category_External.md') 'event502 --> event204'
+Assert-Contains (Join-Path $eventsDirectory 'Category_Configuration.md') '(Event_502.md)'
+
+$stalePage = Join-Path $eventsDirectory 'Event_798.md'
+$authoredPage = Join-Path $eventsDirectory 'Event_797.md'
+$marker = '<!-- Generated by Generate-Events.ps1. Do not edit. -->'
+Set-Content -LiteralPath $stalePage -Value "$marker`nStale generated fixture."
+Set-Content -LiteralPath $authoredPage -Value '# Authored fixture; preserve this file.'
+$beforeVerify = (Get-FileHash $stalePage).Hash
+Assert-GeneratorFailure -Verify -Expected 'Stale generated pages'
+Assert-Condition ((Get-FileHash $stalePage).Hash -eq $beforeVerify) 'Verify modified a stale file.'
+& $generator
+Assert-Condition (-not (Test-Path -LiteralPath $stalePage)) 'Generation did not remove the stale marked page.'
+Assert-Contains $authoredPage '# Authored fixture'
+
+$eventPage = Join-Path $eventsDirectory 'Event_101.md'
+Add-Content -LiteralPath $eventPage -Value 'Outdated fixture.'
+Assert-GeneratorFailure -Verify -Expected 'missing or outdated'
+& $generator
+# This is one explicit generated fixture file, directly inside the isolated
+# fixture directory. Never recursively remove a computed repository path.
+Assert-Condition ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($eventPage)) -ceq $eventsDirectory) 'Unexpected fixture deletion target.'
+Remove-Item -LiteralPath $eventPage
+Assert-GeneratorFailure -Verify -Expected 'missing or outdated'
+& $generator
+& $generator -Verify
+
+Set-Content -LiteralPath $eventPage -Value '# Authored replacement; must not overwrite.'
+Assert-GeneratorFailure -Expected 'Refusing to replace a file without a generated marker'
+Assert-Contains $eventPage '# Authored replacement'
+Write-Host "Generator regression checks passed. Fixtures: $fixtureRoot"

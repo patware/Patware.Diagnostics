@@ -16,7 +16,7 @@ New to Patware.Diagnostics? Start here to learn how to install, configure, and u
 
 Understand the architectural principles, design decisions, and conventions behind the libraries.
 
-### [Application Events](architecture/EVENT-CATALOG.md)
+### [Application Events](events/index.md)
 
 Explore standardized event identifiers, classifications, structured messages, and their operational meaning.
 

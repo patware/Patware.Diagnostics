@@ -1,6 +1,4 @@
 items:
-- name: Events
-  href: EVENT-CATALOG.md
 - name: Configuration validation events
   href: CONFIGURATION-VALIDATION.md
 - name: External operation events

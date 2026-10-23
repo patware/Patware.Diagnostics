@@ -128,10 +128,10 @@ reason codes.
 Switching from timeout failures to unavailable results does not establish
 recovery. The application remains degraded until a successful refresh.
 
-See the catalog entries for [502 — AuthenticationFailed](EVENT-CATALOG.md#event-502),
-[503 — AuthorizationFailed](EVENT-CATALOG.md#event-503),
-[601 — OperationTimedOut](EVENT-CATALOG.md#event-601), and
-[602 — ServiceUnavailable](EVENT-CATALOG.md#event-602) for the complete contracts.
+See the catalog entries for [502 — AuthenticationFailed](../events/Event_502.md),
+[503 — AuthorizationFailed](../events/Event_503.md),
+[601 — OperationTimedOut](../events/Event_601.md), and
+[602 — ServiceUnavailable](../events/Event_602.md) for the complete contracts.
 
 ## Shared sample simulation
 

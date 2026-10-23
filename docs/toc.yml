@@ -1,4 +1,7 @@
 items:
+- name: Events
+  href: events/toc.yml
+  topicHref: events/index.md
 - name: Architecture
   href: architecture/toc.yml
 - name: Design

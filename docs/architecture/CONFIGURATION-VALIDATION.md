@@ -20,7 +20,7 @@ using Patware.Diagnostics.ApplicationEvents;
 | 506 | Configuration_ValueIsInvalid | Warning | A setting failed a validation rule. |
 | 507 | Configuration_ValidationFailed | Warning | The attempt concluded that the candidate is invalid. |
 
-See the [event catalog](EVENT-CATALOG.md) for exact signatures, templates,
+See the [Configuration events](../events/Category_Configuration.md) for exact signatures, templates,
 arguments, and relationships.
 
 ## Expected flow
