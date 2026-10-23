@@ -414,7 +414,7 @@ internal static partial class ApplicationEventMessages
 }
 
 /// <summary>
-/// Reports validation of candidate configurations and their individual settings. Successful validation does not imply that a candidate has been applied.
+/// Reports configuration loading failures, validation attempts, and individual setting results. Successful validation does not imply that a candidate has been applied.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -536,6 +536,39 @@ public readonly struct ConfigurationEvents
     }
 
     /// <summary>
+    /// Reports that an attempt to load configuration failed before a candidate could be obtained for validation.
+    /// </summary>
+    /// <param name="configurationName">The non-sensitive logical name of the configuration being loaded.</param>
+    /// <param name="sourceName">The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses.</param>
+    /// <param name="loadId">The unique identifier of this loading attempt. Use a new identifier for each retry or reload.</param>
+    /// <param name="reasonCode">A stable application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed.</param>
+    /// <param name="exception">The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged.</param>
+    /// <remarks>
+    /// <para>Emit when a required configuration-loading attempt fails during source access, reading, parsing, or deserialization.</para>
+    /// <para>This event describes one failed loading attempt. It does not establish that the application has no working configuration.</para>
+    /// <para>A failed reload may leave a previously accepted configuration active. A failed initial load may instead require fallback or shutdown, according to application policy.</para>
+    /// <para>A missing optional source is not automatically a loading failure. Emit only when the absence prevents the requested loading attempt from succeeding.</para>
+    /// <para>Parsing or deserialization failure prevents obtaining a candidate. A successfully loaded candidate that violates application validation rules belongs to Configuration_ValueIsInvalid and Configuration_ValidationFailed.</para>
+    /// <para>Do not emit validation failure solely because loading failed. If no candidate was obtained, validation need not begin.</para>
+    /// <para>LoadId identifies a loading attempt. ValidationId identifies a validation attempt. Use a logging scope or trace when correlation across these phases is required.</para>
+    /// <para>Use a small documented set of ReasonCode values. Do not include configuration contents, credentials, connection strings, or raw source responses.</para>
+    /// <para>Exceptions can reveal source paths, configuration keys, or other sensitive details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception solely for logging.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>Cancellation and application shutdown are not configuration-loading failures.</para>
+    /// <para>Report once at the boundary responsible for the loading attempt. Avoid reporting the same failure again at each calling layer.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not load configuration, retry, reject a candidate, replace active settings, change application mode, or initiate shutdown.</para>
+    /// <para>Status: Stable. Introduced: 0.0.8.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void LoadFailed(string @configurationName, string @sourceName, string @loadId, string @reasonCode, Exception? @exception)
+    {
+        ConfigurationEventMessages.LoadFailed(Logger, @configurationName, @sourceName, @loadId, @reasonCode, @exception);
+    }
+
+    /// <summary>
     /// Indicates that a candidate configuration setting failed a validation rule.
     /// </summary>
     /// <param name="configurationName">The logical configuration name used by the beginning event.</param>
@@ -632,6 +665,14 @@ internal static partial class ConfigurationEventMessages
         Message = "Configuration {ConfigurationName} passed validation. Validation: {ValidationId}.")]
     internal static partial void Validated(
         ILogger logger, string ConfigurationName, string ValidationId);
+
+    [LoggerMessage(
+        EventId = 501,
+        EventName = "Configuration_LoadFailed",
+        Level = LogLevel.Warning,
+        Message = "Configuration load failed. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}. Reason: {ReasonCode}.")]
+    internal static partial void LoadFailed(
+        ILogger logger, string ConfigurationName, string SourceName, string LoadId, string ReasonCode, Exception? Exception);
 
     [LoggerMessage(
         EventId = 506,

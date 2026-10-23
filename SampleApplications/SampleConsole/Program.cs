@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using Patware.Diagnostics.ApplicationEvents;
 using Patware.Diagnostics.ApplicationEvents.Hosting;
 
+using SampleConsole.Configuration;
+
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
 builder.AddApplicationEvents(options =>
@@ -15,50 +17,11 @@ builder.AddApplicationEvents(options =>
 
 using IHost host = builder.Build();
 
-/* The following code demonstrate how to raise configuration events */
-
 ILogger logger = host.Services.GetRequiredService<ILogger<Program>>();
 
-const string configurationName = "SampleConsole";
+ReloadablePollingConfiguration pollingConfiguration = new(logger, Path.Combine(AppContext.BaseDirectory, "sample-polling.json"));
 
-string failedAttempt = Guid.NewGuid().ToString("N");
-
-logger.Configuration.Validating(configurationName, failedAttempt);
-
-logger.Configuration.ValueIsValid(
-    configurationName,
-    failedAttempt,
-    settingName: "BaseAddress");
-
-logger.Configuration.ValueIsInvalid(
-    configurationName,
-    failedAttempt,
-    settingName: "TimeoutSeconds",
-    reason: "Must be greater than zero");
-
-logger.Configuration.ValidationFailed(
-    configurationName,
-    failedAttempt,
-    reason: "TimeoutSeconds violates its required range");
-
-// Later, after the operator supplies a corrected candidate:
-string correctedAttempt = Guid.NewGuid().ToString("N");
-
-logger.Configuration.Validating(configurationName, correctedAttempt);
-
-logger.Configuration.ValueIsValid(
-    configurationName,
-    correctedAttempt,
-    settingName: "BaseAddress");
-
-logger.Configuration.ValueIsValid(
-    configurationName,
-    correctedAttempt,
-    settingName: "TimeoutSeconds");
-
-logger.Configuration.Validated(configurationName, correctedAttempt);
-
-/* End of Configuration testing */
+pollingConfiguration.TryReload();
 
 IHostApplicationLifetime lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
@@ -80,6 +43,9 @@ if (Console.IsInputRedirected)
 
 Console.WriteLine();
 Console.WriteLine("Application is running.");
+Console.WriteLine($"Configuration file: {pollingConfiguration.SourcePath}");
+Console.WriteLine($"Active polling interval: {pollingConfiguration.Current.PollingIntervalMilliseconds}ms");
+Console.WriteLine("  R       Reload polling configuration");
 Console.WriteLine("  D       Simulate App in degraded mode");
 Console.WriteLine("  N       Simulate App in back to normal mode");
 Console.WriteLine("  X       Simulate an unhandled exception (terminates the process)");
@@ -96,11 +62,27 @@ while (!shutdown.IsCompleted)
     // shutdown without requiring another key press.
     if (!Console.KeyAvailable)
     {
-        await Task.WhenAny(shutdown, Task.Delay(100));
+        await Task.WhenAny(shutdown, Task.Delay(pollingConfiguration.Current.PollingIntervalMilliseconds));
+
         continue;
     }
 
     ConsoleKey key = Console.ReadKey(intercept: true).Key;
+
+    if (key == ConsoleKey.R)
+    {
+        bool applied = pollingConfiguration.TryReload();
+
+        Console.WriteLine(applied
+            ? "Configuration loaded, validated, and applied."
+            : "Reload failed; retaining the active configuration.");
+
+        Console.WriteLine(
+            $"Active polling interval: " +
+            $"{pollingConfiguration.Current.PollingIntervalMilliseconds} ms");
+
+        continue;
+    }
 
     if (key == ConsoleKey.D)
     {
@@ -135,13 +117,6 @@ while (!shutdown.IsCompleted)
         continue;
     }
 
-
-    if (key == ConsoleKey.D)
-    {
-        Console.WriteLine("Degraded mode, sorry...  (just hit N to simulate it's running in normal mode ;)");
-        logger.Application.InDegradedMode("Network is down, can't connect to service XYZ");
-        break;
-    }
 
     if (key == ConsoleKey.Q)
     {

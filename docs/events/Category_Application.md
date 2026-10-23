@@ -6,6 +6,7 @@ Events that are related to the lifetime of the application, like starting, pausi
 
 [All events](index.md) · [Category API reference](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents)
 
+
 ## Events
 
 | EventId | Category | Method | EventClass | LogLevel |
@@ -18,7 +19,11 @@ Events that are related to the lifetime of the application, like starting, pausi
 | [401](Event_401.md) | [Application](Category_Application.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents) | [InDegradedMode](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InDegradedMode%28System.String%29) | RecoverableWarning | Warning |
 | [701](Event_701.md) | [Application](Category_Application.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents) | [UnhandledException](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.UnhandledException%28System.Exception%29) | Catastrophic | Critical |
 
-## Related transitions
+## Beginning and completion relationships
+
+These diagrams show the beginning, completion, and failure outcomes
+explicitly declared in the catalog. Optional detail events and other
+category events may not participate.
 
 ### 101 — 102
 

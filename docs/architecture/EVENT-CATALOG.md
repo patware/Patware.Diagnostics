@@ -59,6 +59,12 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_401.md) · [Application category](../events/Category_Application.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InDegradedMode%28System.String%29)
 
+<a id="event-501"></a>
+
+## 501 — Configuration_LoadFailed
+
+[Event documentation](../events/Event_501.md) · [Configuration category](../events/Category_Configuration.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.LoadFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+
 <a id="event-502"></a>
 
 ## 502 — External_AuthenticationFailed

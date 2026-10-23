@@ -6,7 +6,13 @@
     },
     "Configuration": {
       "Name": "Configuration",
-      "Summary": "Reports validation of candidate configurations and their individual settings. Successful validation does not imply that a candidate has been applied."
+      "Summary": "Reports configuration loading failures, validation attempts, and individual setting results. Successful validation does not imply that a candidate has been applied.",
+      "Guides": [
+        {
+          "Title": "Configuration loading and validation",
+          "Path": "architecture/CONFIGURATION-VALIDATION.md"
+        }
+      ]
     },
     "External": {
       "Name": "External",
@@ -251,6 +257,60 @@
       ],
       "Status": "Stable",
       "Since": "0.0.3"
+    },
+    "501": {
+      "EventId": 501,
+      "EventName": "Configuration_LoadFailed",
+      "Category": "Configuration",
+      "Method": "LoadFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Configuration load failed. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}. Reason: {ReasonCode}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the configuration being loaded."
+        },
+        {
+          "Name": "sourceName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses."
+        },
+        {
+          "Name": "loadId",
+          "ValueType": "string",
+          "Summary": "The unique identifier of this loading attempt. Use a new identifier for each retry or reload."
+        },
+        {
+          "Name": "reasonCode",
+          "ValueType": "string",
+          "Summary": "A stable application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "Exception?",
+          "Summary": "The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged."
+        }
+      ],
+      "Summary": "Reports that an attempt to load configuration failed before a candidate could be obtained for validation.",
+      "Trigger": "Emit when a required configuration-loading attempt fails during source access, reading, parsing, or deserialization.",
+      "Remarks": [
+        "This event describes one failed loading attempt. It does not establish that the application has no working configuration.",
+        "A failed reload may leave a previously accepted configuration active. A failed initial load may instead require fallback or shutdown, according to application policy.",
+        "A missing optional source is not automatically a loading failure. Emit only when the absence prevents the requested loading attempt from succeeding.",
+        "Parsing or deserialization failure prevents obtaining a candidate. A successfully loaded candidate that violates application validation rules belongs to Configuration_ValueIsInvalid and Configuration_ValidationFailed.",
+        "Do not emit validation failure solely because loading failed. If no candidate was obtained, validation need not begin.",
+        "LoadId identifies a loading attempt. ValidationId identifies a validation attempt. Use a logging scope or trace when correlation across these phases is required.",
+        "Use a small documented set of ReasonCode values. Do not include configuration contents, credentials, connection strings, or raw source responses.",
+        "Exceptions can reveal source paths, configuration keys, or other sensitive details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception solely for logging.",
+        "The exception travels through the logging exception channel and is not a message-template property.",
+        "Cancellation and application shutdown are not configuration-loading failures.",
+        "Report once at the boundary responsible for the loading attempt. Avoid reporting the same failure again at each calling layer.",
+        "Calling this method only emits a diagnostic record. It does not load configuration, retry, reject a candidate, replace active settings, change application mode, or initiate shutdown."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.8"
     },
     "502": {
       "EventId": 502,

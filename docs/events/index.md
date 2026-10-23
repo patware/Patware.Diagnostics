@@ -23,6 +23,7 @@ Deprecated and retired events remain documented for interpreting historical logs
 | [112](Event_112.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [Validated](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validated%28System.String%2CSystem.String%29) | LowLevel | Information |
 | [204](Event_204.md) | [Application](Category_Application.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents) | [InNormalMode](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InNormalMode) | OperationalInformation | Information |
 | [401](Event_401.md) | [Application](Category_Application.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents) | [InDegradedMode](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InDegradedMode%28System.String%29) | RecoverableWarning | Warning |
+| [501](Event_501.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [LoadFailed](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.LoadFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [502](Event_502.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthenticationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [503](Event_503.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthorizationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [506](Event_506.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [ValueIsInvalid](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.ValueIsInvalid%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%29) | UnrecoverableWarning | Warning |
@@ -36,7 +37,7 @@ Deprecated and retired events remain documented for interpreting historical logs
 | Name | Summary |
 | --- | --- |
 | [Application](Category_Application.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents) | Events that are related to the lifetime of the application, like starting, pausing, stopped\. A typical app&#39;s lifecycle will be: Starting \-&gt; Started \[\-&gt; Pausing \-&gt; Paused \[\-&gt; Resuming \-&gt; Resumed\]\] \-&gt; Stopping \-&gt; Stopped\. |
-| [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | Reports validation of candidate configurations and their individual settings\. Successful validation does not imply that a candidate has been applied\. |
+| [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | Reports configuration loading failures, validation attempts, and individual setting results\. Successful validation does not imply that a candidate has been applied\. |
 | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | Reports operations involving external dependencies\. Operation outcomes do not automatically determine the application&#39;s operating mode\. |
 
 ## Usage and operational guidance
@@ -46,6 +47,6 @@ existing `ILogger`, for example `logger.Application.Starting()`.
 Category access preserves the logger's original logging category, providers,
 and configuration. Detailed pages show signatures and caller-supplied arguments.
 
-- [Configuration validation](../architecture/CONFIGURATION-VALIDATION.md)
+- [Configuration loading and validation](../architecture/CONFIGURATION-VALIDATION.md)
 - [External operations](../architecture/EXTERNAL-OPERATIONS.md)
 - [API reference](xref:Patware.Diagnostics.ApplicationEvents)

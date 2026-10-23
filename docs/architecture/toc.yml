@@ -1,5 +1,5 @@
 items:
-- name: Configuration validation events
+- name: Configuration loading and validation
   href: CONFIGURATION-VALIDATION.md
 - name: External operation events
   href: EXTERNAL-OPERATIONS.md
