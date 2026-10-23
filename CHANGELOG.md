@@ -18,12 +18,23 @@ published releases are identified by package and release date below.
   properties, exception preservation, filtering, and event-group guards.
 - Operational guidance distinguishing authentication, authorization,
   timeout, and availability failures.
+- Published DocFX documentation through GitHub Pages, updated automatically
+  after successful validation of `main`.
+- Dedicated Events navigation with an event index, category summaries,
+  individual event pages, and links to the C# API reference.
+- Generator regression checks covering documentation links, cross-category
+  relationships, stale pages, and protection of authored files.
 
 ### Changed
 
 - Replaced the shared sample result's availability flag with explicit
   outcome status, preserving successful empty responses as distinct
   from dependency failures.
+- Reorganized event documentation into category and event pages, with
+  related transitions and Mermaid lifecycle diagrams.
+- Extended documentation generation and verification to manage multiple
+  pages and detect stale generated output.
+- Preserved existing event-catalog anchors through a compatibility page.
 
 ### Fixed
 
@@ -31,6 +42,8 @@ published releases are identified by package and release date below.
   delays can be retried without uploading packages again.
 - Added verification of existing GitHub release assets and tag identity
   before finalization.
+- Corrected Markdown escaping so lifecycle arrows and special characters
+  display correctly in generated documentation.
 
 ## 0.0.6 - 2026-10-22
 
