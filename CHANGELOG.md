@@ -3,6 +3,35 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.7 - 2026-10-23
+
+### Added
+
+- External dependency rejection events through `logger.External`:
+  - 502, `External_AuthenticationFailed`.
+  - 503, `External_AuthorizationFailed`.
+- Structured dependency, operation, attempt, and reason-code properties,
+  with nullable exceptions for rejection results returned without throwing.
+- Authentication-rejection and authorization-denial simulations in the
+  Blazor, Worker Service, and WPF samples.
+- Contract tests covering event identities, Warning severity, structured
+  properties, exception preservation, filtering, and event-group guards.
+- Operational guidance distinguishing authentication, authorization,
+  timeout, and availability failures.
+
+### Changed
+
+- Replaced the shared sample result's availability flag with explicit
+  outcome status, preserving successful empty responses as distinct
+  from dependency failures.
+
+### Fixed
+
+- Separated release finalization from NuGet publication so availability
+  delays can be retried without uploading packages again.
+- Added verification of existing GitHub release assets and tag identity
+  before finalization.
+
 ## 0.0.6 - 2026-10-22
 
 ### Added

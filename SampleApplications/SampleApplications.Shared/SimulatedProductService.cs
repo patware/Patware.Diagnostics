@@ -19,7 +19,8 @@ public static class SimulatedProductService
     /// </param>
     /// <returns>
     /// A successful response containing Coffee, Tea, and Chocolate prices,
-    /// or an explicit unavailable result.
+    /// or an explicit unavailable, authentication-rejected, or authorization-denied
+    /// response.
     /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// The mode is not defined.
@@ -28,10 +29,9 @@ public static class SimulatedProductService
     /// Cancellation was requested.
     /// </exception>
     /// <remarks>
-    /// Unresponsive mode waits asynchronously until cancellation. The caller
-    /// determines whether cancellation represents timeout or shutdown.
-    /// Unavailable mode returns normally without manufacturing an exception.
-    /// This method does not emit diagnostic events.
+    /// Immediate failure modes return normal results without exceptions.
+    /// Authentication and authorization modes represent the application calling
+    /// its dependency; they do not simulate authentication of a UI user.
     /// </remarks>
     public static async Task<ProductServiceResult> FetchAsync(SimulatedServiceMode mode, CancellationToken cancellationToken)
     {
@@ -42,9 +42,11 @@ public static class SimulatedProductService
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (mode == SimulatedServiceMode.Unavailable)
+        switch (mode)
         {
-            return ProductServiceResult.Unavailable;
+            case SimulatedServiceMode.Unavailable: return ProductServiceResult.Unavailable;
+            case SimulatedServiceMode.AuthenticationRejected: return ProductServiceResult.AuthenticationRejected;
+            case SimulatedServiceMode.AuthorizationDenied: return ProductServiceResult.AuthorizationDenied;
         }
 
         if (mode == SimulatedServiceMode.Unresponsive)
@@ -55,12 +57,11 @@ public static class SimulatedProductService
         await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
 
         return ProductServiceResult.Success(
-            new[]
-            {
+            [
                 new ProductPrice("Coffee", NextPrice(12m)),
                 new ProductPrice("Tea", NextPrice(8m)),
                 new ProductPrice("Chocolate", NextPrice(5m))
-            });
+            ]);
     }
 
     private static decimal NextPrice(decimal minimum)

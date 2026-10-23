@@ -146,6 +146,13 @@ public partial class MainWindow : Window
     /// Event 401 occurs only when entering degraded mode, and event 204 occurs
     /// only after a successful refresh. Shutdown cancellation is handled separately.
     /// </para>
+    /// <para>
+    /// Each failed attempt emits its classified dependency event: 502 for
+    /// authentication rejection, 503 for authorization denial, 601 for timeout,
+    /// or 602 for unavailability. Application mode events occur only on transitions.
+    /// The sample's shared cache represents application-owned demonstration data,
+    /// not a substitute for enforcing access to protected user data.
+    /// </para>
     /// </remarks>
     private async void Refresh_Button_Click(object sender, RoutedEventArgs e)
     {
@@ -182,19 +189,51 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (!result.IsAvailable)
+            if (!result.IsSuccess)
             {
-                _logger.External.ServiceUnavailable(
-                    externalName: "ProductService",
-                    operationName: "FetchPrice",
-                    operationId: operationId,
-                    reasonCode: "ServiceUnavailable",
-                    exception: null);
+                string failure;
 
-                ShowFailedRefresh(
-                    failure: "Product service reported unavailability",
-                    status: "Service unavailable.");
+                switch (result.Status)
+                {
+                    case ProductServiceStatus.Unavailable:
+                        _logger.External.ServiceUnavailable(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "ServiceUnavailable",
+                            exception: null);
 
+                        failure = "Product service reported unavailability";
+                        break;
+
+                    case ProductServiceStatus.AuthenticationRejected:
+                        _logger.External.AuthenticationFailed(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "AuthenticationRejected",
+                            exception: null);
+
+                        failure = "Product service rejected application authentication";
+                        break;
+
+                    case ProductServiceStatus.AuthorizationDenied:
+                        _logger.External.AuthorizationFailed(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "PermissionDenied",
+                            exception: null);
+
+                        failure = "Product service denied the application permission";
+                        break;
+
+                    default:
+                        throw new InvalidOperationException(
+                            $"Unexpected product-service result: {result.Status}.");
+                }
+
+                ShowFailedRefresh(failure, "Refresh failed. See the diagnostic log.");
                 return;
             }
 
@@ -281,14 +320,26 @@ public partial class MainWindow : Window
         _serviceMode = _serviceMode switch
         {
             SimulatedServiceMode.Available => SimulatedServiceMode.Unresponsive,
+
             SimulatedServiceMode.Unresponsive => SimulatedServiceMode.Unavailable,
+
+            SimulatedServiceMode.Unavailable => SimulatedServiceMode.AuthenticationRejected,
+
+            SimulatedServiceMode.AuthenticationRejected => SimulatedServiceMode.AuthorizationDenied,
+
             _ => SimulatedServiceMode.Available
         };
 
         AvailabilityButton.Content = _serviceMode switch
         {
             SimulatedServiceMode.Available => "Simulate timeout",
+
             SimulatedServiceMode.Unresponsive => "Simulate immediate unavailability",
+
+            SimulatedServiceMode.Unavailable => "Simulate authentication rejection",
+
+            SimulatedServiceMode.AuthenticationRejected => "Simulate authorization denial",
+
             _ => "Restore service availability"
         };
 

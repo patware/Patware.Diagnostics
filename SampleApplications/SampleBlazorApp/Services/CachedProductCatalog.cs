@@ -34,7 +34,7 @@ public sealed class CachedProductCatalog : IDisposable
     private int _mode = (int)SimulatedServiceMode.Available;
 
     private CatalogSnapshot _snapshot = new(
-        Array.Empty<ProductPrice>(),
+        [],
         UpdatedAt: null,
         IsDegraded: false);
 
@@ -108,6 +108,13 @@ public sealed class CachedProductCatalog : IDisposable
     /// Event 401 occurs only when entering degraded mode, and event 204 occurs
     /// only after a successful refresh. Shutdown cancellation propagates.
     /// </para>
+    /// <para>
+    /// Each failed attempt emits its classified dependency event: 502 for
+    /// authentication rejection, 503 for authorization denial, 601 for timeout,
+    /// or 602 for unavailability. Application mode events occur only on transitions.
+    /// The sample's shared cache represents application-owned demonstration data,
+    /// not a substitute for enforcing access to protected user data.
+    /// </para>
     /// </remarks>
     /// <exception cref="OperationCanceledException">
     /// The application is shutting down.
@@ -133,16 +140,51 @@ public sealed class CachedProductCatalog : IDisposable
 
                 stopping.ThrowIfCancellationRequested();
 
-                if (!result.IsAvailable)
+                if (!result.IsSuccess)
                 {
-                    _logger.External.ServiceUnavailable(
-                        externalName: "ProductService",
-                        operationName: "FetchProducts",
-                        operationId: operationId,
-                        reasonCode: "ServiceUnavailable",
-                        exception: null);
+                    string failure;
 
-                    MarkDegraded("Product service reported unavailability");
+                    switch (result.Status)
+                    {
+                        case ProductServiceStatus.Unavailable:
+                            _logger.External.ServiceUnavailable(
+                                externalName: "ProductService",
+                                operationName: "FetchProducts",
+                                operationId: operationId,
+                                reasonCode: "ServiceUnavailable",
+                                exception: null);
+
+                            failure = "Product service reported unavailability";
+                            break;
+
+                        case ProductServiceStatus.AuthenticationRejected:
+                            _logger.External.AuthenticationFailed(
+                                externalName: "ProductService",
+                                operationName: "FetchProducts",
+                                operationId: operationId,
+                                reasonCode: "AuthenticationRejected",
+                                exception: null);
+
+                            failure = "Product service rejected application authentication";
+                            break;
+
+                        case ProductServiceStatus.AuthorizationDenied:
+                            _logger.External.AuthorizationFailed(
+                                externalName: "ProductService",
+                                operationName: "FetchProducts",
+                                operationId: operationId,
+                                reasonCode: "PermissionDenied",
+                                exception: null);
+
+                            failure = "Product service denied the application permission";
+                            break;
+
+                        default:
+                            throw new InvalidOperationException(
+                                $"Unexpected product-service result: {result.Status}.");
+                    }
+
+                    MarkDegraded(failure);
                     return;
                 }
 

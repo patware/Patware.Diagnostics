@@ -35,13 +35,14 @@ public sealed class Worker(
     private DateTimeOffset? _cachedAt;
 
     /// <inheritdoc />
-    protected override async Task ExecuteAsync(
-        CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         string stopFilePath = Path.GetFullPath("stop.txt");
         string exceptionFilePath = Path.GetFullPath("exception.txt");
         string degradedFilePath = Path.GetFullPath("degraded.txt");
         string unavailableFilePath = Path.GetFullPath("unavailable.txt");
+        string authenticationFilePath = Path.GetFullPath("authentication-failed.txt");
+        string authorizationFilePath = Path.GetFullPath("authorization-denied.txt");
 
         logger.LogInformation(
             "For graceful shutdown, create {StopFilePath}",
@@ -56,9 +57,21 @@ public sealed class Worker(
             degradedFilePath);
 
         logger.LogInformation(
-            "To simulate immediate service unavailability, create {UnavailableFilePath}. " +
-            "This takes precedence over degraded.txt. Remove both files to allow recovery.",
+            "To simulate immediate service unavailability, create {UnavailableFilePath}.",
             unavailableFilePath);
+
+        logger.LogInformation(
+            "To reject application authentication, create {AuthenticationFilePath}.",
+            authenticationFilePath);
+
+        logger.LogInformation(
+            "To deny application permission, create {AuthorizationFilePath}.",
+            authorizationFilePath);
+
+        logger.LogInformation(
+            "Dependency switches are checked in this order: authentication-failed.txt, " +
+            "authorization-denied.txt, unavailable.txt, degraded.txt. " +
+            "Remove all dependency switches to allow recovery.");
 
         try
         {
@@ -95,7 +108,13 @@ public sealed class Worker(
                     return;
                 }
 
-                await RefreshPriceAsync(degradedFilePath, unavailableFilePath, stoppingToken);
+                SimulatedServiceMode mode = GetServiceMode(
+                    degradedFilePath,
+                    unavailableFilePath,
+                    authenticationFilePath,
+                    authorizationFilePath);
+
+                await RefreshPriceAsync(mode, stoppingToken);
 
                 // This delay also bounds routine sample log volume.
                 await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
@@ -109,60 +128,77 @@ public sealed class Worker(
     }
 
     /// <summary>
-    /// Refreshes the cached price or retains it when the dependency fails.
+    /// Refreshes the cached price or retains it after a dependency failure.
     /// </summary>
-    /// <param name="degradedFilePath">The persistent simulated-outage switch.</param>
-    /// <param name="unavailableFilePath">
-    /// The persistent switch for immediate service unavailability.
-    /// </param>
+    /// <param name="mode">The dependency behavior captured for this request.</param>
     /// <param name="stoppingToken">Cancellation requested by host shutdown.</param>
     /// <remarks>
-    /// The worker executes refreshes sequentially, so no additional locking
-    /// is needed for its cache or operating-mode state.
-    /// Recovery is recorded only after a successful response replaces the cache.
-    /// <para>
-    /// Confirmed timeouts emit event 601; explicit unavailable results emit
-    /// event 602 without an exception. Each failed attempt has its own identifier.
-    /// Event 401 occurs only when entering degraded mode, and event 204 occurs
-    /// only after a successful refresh. Shutdown cancellation propagates.
-    /// </para>
+    /// The worker executes refreshes sequentially. Each failed attempt emits
+    /// its classified dependency event; mode events occur only on transitions.
+    /// Successful refreshes replace the cache before establishing recovery.
+    /// Shutdown cancellation propagates to the execution loop.
     /// </remarks>
-    private async Task RefreshPriceAsync(
-        string degradedFilePath,
-        string unavailableFilePath,
-        CancellationToken stoppingToken)
+    private async Task RefreshPriceAsync(SimulatedServiceMode mode, CancellationToken stoppingToken)
     {
         string operationId = Guid.NewGuid().ToString("N");
         TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
 
         using CancellationTokenSource timeout = new(timeoutBudget);
 
-        using CancellationTokenSource request =
-            CancellationTokenSource.CreateLinkedTokenSource(
-                stoppingToken,
-                timeout.Token);
+        using CancellationTokenSource request = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, timeout.Token);
 
         try
         {
-            SimulatedServiceMode mode = GetServiceMode(
-                degradedFilePath,
-                unavailableFilePath);
 
-            ProductServiceResult result =
-                await SimulatedProductService.FetchAsync(mode, request.Token);
+            ProductServiceResult result = await SimulatedProductService.FetchAsync(mode, request.Token);
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            if (!result.IsAvailable)
+            if (!result.IsSuccess)
             {
-                logger.External.ServiceUnavailable(
-                    externalName: "ProductService",
-                    operationName: "FetchPrice",
-                    operationId: operationId,
-                    reasonCode: "ServiceUnavailable",
-                    exception: null);
+                string failure;
 
-                UseCachedPrice("Product service reported unavailability");
+                switch (result.Status)
+                {
+                    case ProductServiceStatus.Unavailable:
+                        logger.External.ServiceUnavailable(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "ServiceUnavailable",
+                            exception: null);
+
+                        failure = "Product service reported unavailability";
+                        break;
+
+                    case ProductServiceStatus.AuthenticationRejected:
+                        logger.External.AuthenticationFailed(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "AuthenticationRejected",
+                            exception: null);
+
+                        failure = "Product service rejected application authentication";
+                        break;
+
+                    case ProductServiceStatus.AuthorizationDenied:
+                        logger.External.AuthorizationFailed(
+                            externalName: "ProductService",
+                            operationName: "FetchPrice",
+                            operationId: operationId,
+                            reasonCode: "PermissionDenied",
+                            exception: null);
+
+                        failure = "Product service denied the application permission";
+                        break;
+
+                    default:
+                        throw new InvalidOperationException(
+                            $"Unexpected product-service result: {result.Status}.");
+                }
+
+                UseCachedPrice(failure);
                 return;
             }
 
@@ -202,24 +238,36 @@ public sealed class Worker(
     }
 
     /// <summary>
-    /// Selects dependency behavior from the Worker's trigger files.
+    /// Selects dependency behavior from the Worker's persistent trigger files.
     /// </summary>
-    /// <param name="degradedFilePath">
-    /// The switch for an unresponsive dependency.
-    /// </param>
-    /// <param name="unavailableFilePath">
-    /// The switch for immediate unavailability.
-    /// </param>
+    /// <param name="degradedFilePath">The unresponsive-service switch.</param>
+    /// <param name="unavailableFilePath">The unavailable-service switch.</param>
+    /// <param name="authenticationFilePath">The authentication-rejection switch.</param>
+    /// <param name="authorizationFilePath">The authorization-denial switch.</param>
     /// <returns>The behavior to use for the next request.</returns>
     /// <remarks>
-    /// Trigger files belong to the Worker sample, not the shared simulation.
-    /// Unavailable takes precedence when both files exist. The returned mode
-    /// is captured for the request and is unaffected by later file changes.
+    /// Authentication rejection takes precedence over authorization denial,
+    /// unavailability, and an unresponsive service, in that order.
+    /// This precedence only makes simultaneous sample switches deterministic;
+    /// it does not imply a lifecycle between these failure kinds.
+    /// The selected mode remains fixed for the request.
     /// </remarks>
     private static SimulatedServiceMode GetServiceMode(
         string degradedFilePath,
-        string unavailableFilePath)
+        string unavailableFilePath,
+        string authenticationFilePath,
+        string authorizationFilePath)
     {
+        if (File.Exists(authenticationFilePath))
+        {
+            return SimulatedServiceMode.AuthenticationRejected;
+        }
+
+        if (File.Exists(authorizationFilePath))
+        {
+            return SimulatedServiceMode.AuthorizationDenied;
+        }
+
         if (File.Exists(unavailableFilePath))
         {
             return SimulatedServiceMode.Unavailable;

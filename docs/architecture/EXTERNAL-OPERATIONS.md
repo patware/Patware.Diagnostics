@@ -2,10 +2,12 @@
 
 External operation events report individual failed attempts.
 
-| Event | Meaning |
-|---|---|
-| 601 — External_OperationTimedOut | The operation exceeded its timeout budget. |
-| 602 — External_ServiceUnavailable | The caller observed that the dependency could not serve the operation because of an availability failure. |
+| Event                               | Meaning                                                                                                   |
+|-------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| 502 — External_AuthenticationFailed | The dependency rejected authentication for the attempt.                                                   |
+| 503 — External_AuthorizationFailed  | The dependency denied permission for the operation.                                                       |
+| 601 — External_OperationTimedOut    | The operation exceeded its timeout budget.                                                                |
+| 602 — External_ServiceUnavailable   | The caller observed that the dependency could not serve the operation because of an availability failure. |
 
 User cancellation and application shutdown are neither timeouts nor
 availability failures.
@@ -15,40 +17,61 @@ does not establish that the dependency is unavailable to every caller.
 
 ## Structured properties
 
-| Property | Events | Meaning |
-|---|---|---|
-| ExternalName | 601, 602 | Stable logical dependency name. |
-| OperationName | 601, 602 | Stable logical operation name. |
-| OperationId | 601, 602 | Identifier of one attempt; retries use different identifiers. |
-| TimeoutMilliseconds | 601 | Configured timeout budget, not measured elapsed time. |
-| ReasonCode | 602 | Stable application-defined availability-failure classification. |
+| Property            | Events             | Meaning                                                       |
+|---------------------|--------------------|---------------------------------------------------------------|
+| ExternalName        | 502, 503, 601, 602 | Stable logical dependency name.                               |
+| OperationName       | 502, 503, 601, 602 | Stable logical operation name.                                |
+| OperationId         | 502, 503, 601, 602 | Identifier of one attempt; retries use different identifiers. |
+| TimeoutMilliseconds | 601                | Configured timeout budget, not measured elapsed time.         |
+| ReasonCode          | 502, 503, 602      | Stable application-defined failure classification.            |
 
-Both events use the logging exception channel rather than an exception
-message-template property. Event 601 requires the original timeout
-exception. Event 602 accepts null when unavailability was returned as a
-normal result. Do not manufacture an exception solely for logging.
+All four events use the logging exception channel.
+
+Event 601 requires the original timeout exception. Events 502, 503, and 602
+accept null for normal failure results. For authentication and authorization
+failures, exception messages and nested details must also be appropriate for
+the logging destination. Do not manufacture an exception solely for logging.
+
+These event identifiers are library identifiers, not HTTP status codes.
+Classify outcomes from the dependency contract rather than matching the
+event number to a protocol status number.
 
 Use a logging scope or trace to associate several attempts with a larger
 logical operation.
 
 ## Cached fallback example
 
-The samples provide three dependency modes: Available returns fresh values,
-Unresponsive waits until timeout and produces 601, and Unavailable returns
-immediately and produces 602.
+The samples provide five dependency modes:
 
-In the Worker sample, `degraded.txt` selects Unresponsive and `unavailable.txt`
-selects Unavailable. The unavailable switch takes precedence when both
-files exist. Remove both files to allow recovery. Paths are resolved against
-the current working directory and logged at startup. Changes affect subsequent
-requests rather than an already pending request.
+| Mode                   | Outcome                                                    |
+|------------------------|------------------------------------------------------------|
+| Available              | Returns fresh values.                                      |
+| Unresponsive           | Waits until timeout; emits 601.                            |
+| Unavailable            | Immediately reports unavailability; emits 602.             |
+| AuthenticationRejected | Immediately rejects application authentication; emits 502. |
+| AuthorizationDenied    | Immediately denies the operation; emits 503.               |
+
+The Worker checks persistent switches in this order:
+
+1. `authentication-failed.txt`
+2. `authorization-denied.txt`
+3. `unavailable.txt`
+4. `degraded.txt`
+
+The first existing switch selects the request behavior. Remove all four
+switches to allow recovery. Paths are relative to the current working
+directory and are logged at startup. Changes affect subsequent requests.
 
 ```mermaid
 flowchart TD
     A[Refresh requested] --> B{Operation result}
-    B -->|Timeout| C[601: OperationTimedOut]
+    B -->|Authentication rejected| N[502: AuthenticationFailed]
+    B -->|Authorization denied| Z[503: AuthorizationFailed]
+    B -->|Timeout| T[601: OperationTimedOut]
     B -->|Unavailable| U[602: ServiceUnavailable]
-    C --> D{Already degraded?}
+    N --> D{Already degraded?}
+    Z --> D
+    T --> D
     U --> D
     D -->|No| E[401: InDegradedMode]
     D -->|Yes| F[Retain cached values]
@@ -60,26 +83,26 @@ flowchart TD
     B -->|Shutdown cancellation| K[Stop without failure or mode events]
 ```
 
-This diagram describes the samples' fallback policy. It is not a universal
-event lifecycle. An operation failure does not automatically imply reduced
-application functionality.
+The authentication and authorization simulations represent the application
+calling its dependency. Cached fallback demonstrates continued use of
+application-owned sample prices.
 
-Repeated failed refreshes produce 601 or 602 events according to the observed
-failure, with distinct attempt identifiers. Event 401 occurs once on entry
-into degraded mode. Event 204
-occurs after a successful refresh restores normal operation.
+Real applications must apply their own authorization and data-access policy
+to cached data. A dependency rejection does not authorize serving protected
+data from a cache.
 
-If no successful refresh has occurred yet, the cache is empty. Reporting
-degraded mode does not imply that fallback data exists.
+Changing between failure kinds does not establish recovery and does not
+repeat event 401. A successful refresh establishes recovery and emits 204.
 
 ## Interpretation
 
 A timeout means the caller did not obtain a result within its budget.
 It does not prove that the remote operation stopped or had no side effects.
 
-Error severity describes the failed attempt. Alerting decisions should
-consider persistence, frequency, dependency importance, and application
-impact.
+Events 502/503 use Warning; events 601/602 use Error. Alerting decisions
+should consider persistence, frequency, dependency importance,
+and application impact. Alerting decisions should consider persistence,
+frequency, dependency importance, and application impact.
 
 Report the failure once at the boundary responsible for the dependency
 operation. Avoid reporting the same failure again at each calling layer.

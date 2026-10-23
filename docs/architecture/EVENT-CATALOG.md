@@ -421,6 +421,97 @@ instance. Other log records may appear between related events. Missing
 records can also result from filtering, collection loss, or abrupt termination.
 
 
+<a id="event-502"></a>
+
+## 502 — External_AuthenticationFailed
+
+Reports that an external dependency rejected authentication for an operation attempt\.
+
+| Field | Value |
+| --- | --- |
+| API category | External |
+| Event class | UnrecoverableWarning |
+| Default level | Warning |
+| Status | Stable |
+| Introduced | 0.0.7 |
+
+### Usage
+
+```csharp
+logger.External.AuthenticationFailed(@externalName, @operationName, @operationId, @reasonCode, @exception);
+```
+
+**Trigger:** Emit when the dependency result establishes an authentication rejection\.
+
+**Message template:** External authentication failed\. Dependency: \{ExternalName\}\. Operation: \{OperationName\}\. Attempt: \{OperationId\}\. Reason: \{ReasonCode\}\.
+
+### Arguments
+
+- `externalName` (`string`): The stable logical dependency name, without credentials or request\-specific data\.
+- `operationName` (`string`): The stable logical name of the operation whose authentication was rejected\.
+- `operationId` (`string`): The identifier of this individual operation attempt\. Use a different identifier for each retry\.
+- `reasonCode` (`string`): A stable application\-defined classification, such as AuthenticationRejected\. Do not include credentials, tokens, or raw response content\.
+- `exception` (`Exception?`): The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged\.
+
+### Remarks
+
+- This event reports the observed rejection\. It does not establish that a password is incorrect or identify the underlying credential or policy problem\.
+- An authentication operation that exceeds its deadline belongs to External\_OperationTimedOut\. An authentication dependency that reports unavailability belongs to External\_ServiceUnavailable\.
+- Authorization denial has a separate meaning and belongs to External\_AuthorizationFailed\.
+- Use a small documented set of ReasonCode values suitable for grouping\. Do not include credentials, tokens, authorization headers, connection strings, or raw authentication responses\.
+- Exceptions may contain sensitive messages or nested details\. Pass the original exception only when appropriate for the logging destination; otherwise pass null\. Do not manufacture an exception for a normal rejection result\.
+- The exception travels through the logging exception channel and is not a message\-template property\.
+- Report once at the boundary responsible for the dependency attempt\. Avoid reporting the same rejection again at each calling layer\.
+- The event does not change application mode, refresh credentials, retry the operation, or initiate shutdown\. Emit application mode events separately when functionality changes\.
+- User cancellation and application shutdown are not authentication rejections\.
+
+
+<a id="event-503"></a>
+
+## 503 — External_AuthorizationFailed
+
+Reports that an external dependency denied permission to perform an operation attempt\.
+
+| Field | Value |
+| --- | --- |
+| API category | External |
+| Event class | UnrecoverableWarning |
+| Default level | Warning |
+| Status | Stable |
+| Introduced | 0.0.7 |
+
+### Usage
+
+```csharp
+logger.External.AuthorizationFailed(@externalName, @operationName, @operationId, @reasonCode, @exception);
+```
+
+**Trigger:** Emit when the dependency result establishes an authorization denial\.
+
+**Message template:** External authorization failed\. Dependency: \{ExternalName\}\. Operation: \{OperationName\}\. Attempt: \{OperationId\}\. Reason: \{ReasonCode\}\.
+
+### Arguments
+
+- `externalName` (`string`): The stable logical dependency name, without credentials or request\-specific data\.
+- `operationName` (`string`): The stable logical name of the operation whose permission was denied\.
+- `operationId` (`string`): The identifier of this individual operation attempt\. Use a different identifier for each retry\.
+- `reasonCode` (`string`): A stable application\-defined classification, such as PermissionDenied\. Do not include identities, protected resource details, or raw response content\.
+- `exception` (`Exception?`): The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged\.
+
+### Remarks
+
+- This event reports the observed permission denial\. It does not independently establish that authentication succeeded or identify the policy responsible\.
+- Authentication rejection has a separate meaning and belongs to External\_AuthenticationFailed\.
+- Timeouts and dependency unavailability belong to their respective external failure events\. Do not classify every unsuccessful result as authorization failure\.
+- Use a small documented set of ReasonCode values suitable for grouping\. Do not include tokens, authorization headers, personal identities, protected resource details, or raw response bodies\.
+- Exceptions may contain sensitive messages or nested details\. Pass the original exception only when appropriate for the logging destination; otherwise pass null\. Do not manufacture an exception for a normal denial result\.
+- The exception travels through the logging exception channel and is not a message\-template property\.
+- Report once at the boundary responsible for the dependency attempt\. Avoid reporting the same denial again at each calling layer\.
+- The event does not grant permission, choose a fallback, change application mode, retry the operation, or initiate shutdown\.
+- Cached fallback must respect the application&#39;s authorization and data\-access policy\. A dependency denial does not itself authorize access to cached data\.
+- User cancellation and application shutdown are not authorization denials\.
+
+
 <a id="event-506"></a>
 
 ## 506 — Configuration_ValueIsInvalid

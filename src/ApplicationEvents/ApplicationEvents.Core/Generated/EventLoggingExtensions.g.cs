@@ -681,6 +681,67 @@ public readonly struct ExternalEvents
             "Obtain this event group through a logger's External property.");
 
     /// <summary>
+    /// Reports that an external dependency rejected authentication for an operation attempt.
+    /// </summary>
+    /// <param name="externalName">The stable logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The stable logical name of the operation whose authentication was rejected.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <param name="reasonCode">A stable application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content.</param>
+    /// <param name="exception">The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged.</param>
+    /// <remarks>
+    /// <para>Emit when the dependency result establishes an authentication rejection.</para>
+    /// <para>This event reports the observed rejection. It does not establish that a password is incorrect or identify the underlying credential or policy problem.</para>
+    /// <para>An authentication operation that exceeds its deadline belongs to External_OperationTimedOut. An authentication dependency that reports unavailability belongs to External_ServiceUnavailable.</para>
+    /// <para>Authorization denial has a separate meaning and belongs to External_AuthorizationFailed.</para>
+    /// <para>Use a small documented set of ReasonCode values suitable for grouping. Do not include credentials, tokens, authorization headers, connection strings, or raw authentication responses.</para>
+    /// <para>Exceptions may contain sensitive messages or nested details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception for a normal rejection result.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>Report once at the boundary responsible for the dependency attempt. Avoid reporting the same rejection again at each calling layer.</para>
+    /// <para>The event does not change application mode, refresh credentials, retry the operation, or initiate shutdown. Emit application mode events separately when functionality changes.</para>
+    /// <para>User cancellation and application shutdown are not authentication rejections.</para>
+    /// <para>Status: Stable. Introduced: 0.0.7.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void AuthenticationFailed(string @externalName, string @operationName, string @operationId, string @reasonCode, Exception? @exception)
+    {
+        ExternalEventMessages.AuthenticationFailed(Logger, @externalName, @operationName, @operationId, @reasonCode, @exception);
+    }
+
+    /// <summary>
+    /// Reports that an external dependency denied permission to perform an operation attempt.
+    /// </summary>
+    /// <param name="externalName">The stable logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The stable logical name of the operation whose permission was denied.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <param name="reasonCode">A stable application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content.</param>
+    /// <param name="exception">The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged.</param>
+    /// <remarks>
+    /// <para>Emit when the dependency result establishes an authorization denial.</para>
+    /// <para>This event reports the observed permission denial. It does not independently establish that authentication succeeded or identify the policy responsible.</para>
+    /// <para>Authentication rejection has a separate meaning and belongs to External_AuthenticationFailed.</para>
+    /// <para>Timeouts and dependency unavailability belong to their respective external failure events. Do not classify every unsuccessful result as authorization failure.</para>
+    /// <para>Use a small documented set of ReasonCode values suitable for grouping. Do not include tokens, authorization headers, personal identities, protected resource details, or raw response bodies.</para>
+    /// <para>Exceptions may contain sensitive messages or nested details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception for a normal denial result.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>Report once at the boundary responsible for the dependency attempt. Avoid reporting the same denial again at each calling layer.</para>
+    /// <para>The event does not grant permission, choose a fallback, change application mode, retry the operation, or initiate shutdown.</para>
+    /// <para>Cached fallback must respect the application&apos;s authorization and data-access policy. A dependency denial does not itself authorize access to cached data.</para>
+    /// <para>User cancellation and application shutdown are not authorization denials.</para>
+    /// <para>Status: Stable. Introduced: 0.0.7.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void AuthorizationFailed(string @externalName, string @operationName, string @operationId, string @reasonCode, Exception? @exception)
+    {
+        ExternalEventMessages.AuthorizationFailed(Logger, @externalName, @operationName, @operationId, @reasonCode, @exception);
+    }
+
+    /// <summary>
     /// Reports an external operation attempt that failed to complete within its timeout budget.
     /// </summary>
     /// <param name="externalName">The stable logical name of the external dependency, without credentials or request-specific data.</param>
@@ -760,6 +821,22 @@ public readonly struct ExternalEvents
 /// </remarks>
 internal static partial class ExternalEventMessages
 {
+    [LoggerMessage(
+        EventId = 502,
+        EventName = "External_AuthenticationFailed",
+        Level = LogLevel.Warning,
+        Message = "External authentication failed. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Reason: {ReasonCode}.")]
+    internal static partial void AuthenticationFailed(
+        ILogger logger, string ExternalName, string OperationName, string OperationId, string ReasonCode, Exception? Exception);
+
+    [LoggerMessage(
+        EventId = 503,
+        EventName = "External_AuthorizationFailed",
+        Level = LogLevel.Warning,
+        Message = "External authorization failed. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Reason: {ReasonCode}.")]
+    internal static partial void AuthorizationFailed(
+        ILogger logger, string ExternalName, string OperationName, string OperationId, string ReasonCode, Exception? Exception);
+
     [LoggerMessage(
         EventId = 601,
         EventName = "External_OperationTimedOut",
