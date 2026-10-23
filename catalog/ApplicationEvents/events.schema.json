@@ -121,7 +121,7 @@
           "not": { "const": "logger" }
         },
         "ValueType": {
-          "enum": ["string", "double", "Exception"]
+          "enum": ["string", "double", "Exception", "Exception?"]
         },
         "Summary": { "$ref": "#/$defs/text" }
       }

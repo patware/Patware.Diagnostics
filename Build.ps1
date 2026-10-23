@@ -50,10 +50,13 @@ if ($testProjects.Count -eq 0) {
   throw 'No library test projects were found.'
 }
 
-$sampleApplications = Get-ChildItem (Join-Path $root 'SampleApplications') -Recurse -Filter *.csproj
+$sampleProjects = @(
+  Get-ChildItem -LiteralPath (Join-Path $root 'SampleApplications') -Recurse -Filter '*.csproj' -File `
+  | Sort-Object FullName
+)
 
-if ($sampleApplications.Count -eq 0) {
-  throw 'No sample applications were found.'
+if ($sampleProjects.Count -eq 0) {
+  throw 'No sample projects were found.'
 }
 
 
@@ -108,8 +111,8 @@ try {
       @properties
   }
 
-  foreach ($sample in $sampleApplications) {
-    Write-Host "`nBuilding sample application $($sample.BaseName)"
+  foreach ($sample in $sampleProjects) {
+    Write-Host "`nBuilding sample project $($sample.BaseName)"
 
     Invoke-DotNet build $sample.FullName `
       --configuration Release `

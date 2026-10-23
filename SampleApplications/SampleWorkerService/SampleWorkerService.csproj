@@ -13,5 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ApplicationEvents\ApplicationEvents.Hosting\ApplicationEvents.Hosting.csproj" />
+    <ProjectReference Include="../SampleApplications.Shared/SampleApplications.Shared.csproj" />
   </ItemGroup>
 </Project>

@@ -112,10 +112,12 @@ foreach ($key in ($catalog.Ids.Keys | Sort-Object { [int]$_ })) {
     }
   }
 
-  # A single Exception argument is passed through ILogger's exception channel.
-  # It is not a structured message-template property.
+
+  # Required and nullable exceptions both use ILogger's exception channel.
+  # Neither becomes a structured message-template property.
   $exceptionArguments = @(
-    $eve.Arguments | Where-Object { $_.ValueType -ceq 'Exception' }
+    $eve.Arguments |
+      Where-Object { $_.ValueType -cin @('Exception', 'Exception?') }
   )
 
   if ($exceptionArguments.Count -gt 1) {
@@ -152,7 +154,7 @@ foreach ($key in ($catalog.Ids.Keys | Sort-Object { [int]$_ })) {
   }
 
   foreach ($argument in $eve.Arguments) {
-    if ($argument.ValueType -ceq 'Exception') {
+    if ($argument.ValueType -cin @('Exception', 'Exception?')) {
       if ($placeholderNames.Contains($argument.Name)) {
         $problems.Add(
           "$label Exception argument '$($argument.Name)' must not have a placeholder."
@@ -402,7 +404,7 @@ foreach ($categoryName in $categoryNames) {
           Declaration = ", $($argument.ValueType) $internalName"
           Name = $argument.Name
           SummaryXml = ConvertTo-XmlText $argument.Summary
-          IsException = $argument.ValueType -ceq 'Exception'
+          RequiresException = $argument.ValueType -ceq 'Exception'
         }
       }
     )

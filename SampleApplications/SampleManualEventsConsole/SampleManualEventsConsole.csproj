@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ApplicationEvents\ApplicationEvents.Core\ApplicationEvents.Core.csproj" />
+    <ProjectReference Include="../SampleApplications.Shared/SampleApplications.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,6 +4,7 @@
 @using System.Threading
 @using Microsoft.Extensions.Hosting
 @using SampleBlazorApp.Services
+@using SampleApplications.Shared
 
 @inject CachedProductCatalog Catalog
 @inject IHostApplicationLifetime ApplicationLifetime
@@ -24,7 +25,7 @@
 
         <p>
             Refresh prices from our simulated product service.
-            If it stops responding, the last successful values remain available.
+            If a refresh fails, the last successful values remain available.
         </p>
 
         <button type="button"
@@ -35,19 +36,15 @@
 
         @if (HostEnvironment.IsDevelopment())
         {
-            <button type="button"
+            <label for="service-mode">Simulated service</label>
+            <select id="service-mode"
+                    value="@Catalog.Mode"
                     disabled="@(_refreshing || _actionRequested)"
-                    aria-pressed="@(!Catalog.IsAvailable ? "true" : "false")"
-                    @onclick="ToggleAvailability">
-                @(Catalog.IsAvailable
-                    ? "Simulate service outage"
-                    : "Restore service availability")
-            </button>
-
-            <p>
-                Simulated service:
-                <strong>@(Catalog.IsAvailable ? "Available" : "Unavailable")</strong>
-            </p>
+                    @onchange="ChangeServiceMode">
+                <option value="Available">Available</option>
+                <option value="Unresponsive">Unresponsive — waits until timeout</option>
+                <option value="Unavailable">Unavailable — rejects immediately</option>
+            </select>
 
             <small>
                 This control affects every session connected to this server.
@@ -186,7 +183,7 @@ else
             _catalogSnapshot = Catalog.Snapshot;
 
             _catalogStatus = _catalogSnapshot.IsDegraded
-                ? "Refresh timed out."
+                ? "Refresh failed. See the server log for the failure reason."
                 : "Prices refreshed successfully.";
         }
         catch (OperationCanceledException)
@@ -201,13 +198,14 @@ else
     }
 
     /// <summary>
-    /// Toggles availability for subsequent simulated service requests.
+    /// Selects the behavior of subsequent dependency requests.
     /// </summary>
+    /// <param name="args">The selected service mode.</param>
     /// <remarks>
-    /// Restoring availability does not remove the warning. A successful refresh
-    /// must establish recovery before the service emits event 204.
+    /// Changing the control does not establish recovery. A successful refresh
+    /// must update the shared cache before event 204 is emitted.
     /// </remarks>
-    private void ToggleAvailability()
+    private void ChangeServiceMode(ChangeEventArgs args)
     {
         if (!HostEnvironment.IsDevelopment()
             || _refreshing
@@ -216,11 +214,16 @@ else
             return;
         }
 
-        Catalog.SetAvailability(!Catalog.IsAvailable);
+        if (!Enum.TryParse(
+                args.Value?.ToString(),
+                out SimulatedServiceMode mode)
+            || !Enum.IsDefined(mode))
+        {
+            return;
+        }
 
-        _catalogStatus = Catalog.IsAvailable
-            ? "Service availability restored. Refresh to verify recovery."
-            : "Service outage enabled. Refresh to exercise the cached fallback.";
+        Catalog.SetMode(mode);
+        _catalogStatus = $"Service mode: {mode}. Refresh to observe the result.";
     }
 
     /// <summary>
