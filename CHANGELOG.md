@@ -3,7 +3,7 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
-## 0.0.6 - Unreleased
+## 0.0.6 - 2026-10.22
 
 ### Added
 
@@ -23,6 +23,9 @@ published releases are identified by package and release date below.
 
 - Extended catalog generation to support nullable exception arguments while
   preserving required-exception validation for events 601 and 701.
+- Extracted shared product-service simulation and data types into the
+  non-packable `SampleApplications.Shared` project. Each sample retains
+  its own caching, timeout handling, and diagnostic event emission.
 
 ## 0.0.5 - 2026-10-20
 

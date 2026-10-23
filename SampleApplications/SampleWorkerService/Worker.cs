@@ -1,5 +1,7 @@
 using Patware.Diagnostics.ApplicationEvents;
 
+using SampleApplications.Shared;
+
 namespace SampleWorkerService;
 
 /// <summary>
@@ -142,14 +144,33 @@ public sealed class Worker(
 
         try
         {
-            decimal? result = await FetchPriceAsync(
+            SimulatedServiceMode mode = GetServiceMode(
                 degradedFilePath,
-                unavailableFilePath,
-                request.Token);
+                unavailableFilePath);
+
+            ProductServiceResult result =
+                await SimulatedProductService.FetchAsync(mode, request.Token);
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            if (result is not decimal price)
+            if (!result.IsAvailable)
+            {
+                logger.External.ServiceUnavailable(
+                    externalName: "ProductService",
+                    operationName: "FetchPrice",
+                    operationId: operationId,
+                    reasonCode: "ServiceUnavailable",
+                    exception: null);
+
+                UseCachedPrice("Product service reported unavailability");
+                return;
+            }
+
+            decimal price = result.Products
+                .Single(product => product.Name == "Coffee")
+                .Price;
+
+            if (!result.IsAvailable)
             {
                 logger.External.ServiceUnavailable(
                     externalName: "ProductService",
@@ -194,41 +215,32 @@ public sealed class Worker(
     }
 
     /// <summary>
-    /// Simulates fetching a coffee price from the product dependency.
+    /// Selects dependency behavior from the Worker's trigger files.
     /// </summary>
-    /// <param name="degradedFilePath">The switch for an unresponsive service.</param>
-    /// <param name="unavailableFilePath">
-    /// The switch for an immediate unavailable result.
+    /// <param name="degradedFilePath">
+    /// The switch for an unresponsive dependency.
     /// </param>
-    /// <param name="cancellationToken">Cancellation for this request.</param>
-    /// <returns>
-    /// A coffee price, or null when the service explicitly reports unavailability.
-    /// </returns>
+    /// <param name="unavailableFilePath">
+    /// The switch for immediate unavailability.
+    /// </param>
+    /// <returns>The behavior to use for the next request.</returns>
     /// <remarks>
-    /// Switches are evaluated when the request begins. The unavailable switch
-    /// takes precedence when both files exist. File contents are ignored.
-    /// Removing a switch does not change an already pending request.
+    /// Trigger files belong to the Worker sample, not the shared simulation.
+    /// Unavailable takes precedence when both files exist. The returned mode
+    /// is captured for the request and is unaffected by later file changes.
     /// </remarks>
-    private static async Task<decimal?> FetchPriceAsync(
+    private static SimulatedServiceMode GetServiceMode(
         string degradedFilePath,
-        string unavailableFilePath,
-        CancellationToken cancellationToken)
+        string unavailableFilePath)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (File.Exists(unavailableFilePath))
         {
-            return null;
+            return SimulatedServiceMode.Unavailable;
         }
 
-        if (File.Exists(degradedFilePath))
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-        }
-
-        await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
-
-        return 12m + Random.Shared.Next(0, 501) / 100m;
+        return File.Exists(degradedFilePath)
+            ? SimulatedServiceMode.Unresponsive
+            : SimulatedServiceMode.Available;
     }
 
 

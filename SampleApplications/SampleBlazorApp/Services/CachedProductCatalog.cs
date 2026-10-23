@@ -1,13 +1,8 @@
 using Patware.Diagnostics.ApplicationEvents;
 
-namespace SampleBlazorApp.Services;
+using SampleApplications.Shared;
 
-/// <summary>
-/// Represents a product value returned by the simulated dependency.
-/// </summary>
-/// <param name="Name">The product name.</param>
-/// <param name="Price">The current simulated price in CAD.</param>
-public sealed record ProductPrice(string Name, decimal Price);
+namespace SampleBlazorApp.Services;
 
 /// <summary>
 /// Represents the current cached catalog and its operating state.
@@ -134,11 +129,11 @@ public sealed class CachedProductCatalog : IDisposable
 
             try
             {
-                IReadOnlyList<ProductPrice>? products = await FetchProductsAsync(request.Token);
+                ProductServiceResult result = await SimulatedProductService.FetchAsync(Mode, request.Token);
 
                 stopping.ThrowIfCancellationRequested();
 
-                if (products is null)
+                if (!result.IsAvailable)
                 {
                     _logger.External.ServiceUnavailable(
                         externalName: "ProductService",
@@ -156,7 +151,7 @@ public sealed class CachedProductCatalog : IDisposable
                 Volatile.Write(
                     ref _snapshot,
                     new CatalogSnapshot(
-                        products,
+                        result.Products,
                         DateTimeOffset.UtcNow,
                         IsDegraded: false));
 
@@ -193,49 +188,7 @@ public sealed class CachedProductCatalog : IDisposable
         _refreshGate.Dispose();
     }
 
-    /// <summary>
-    /// Simulates a request to the product dependency.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation for this request.</param>
-    /// <returns>
-    /// Fresh prices, or null when the service explicitly reports unavailability.
-    /// </returns>
-    /// <remarks>
-    /// Null is the explicit unavailable result for this sample; an empty
-    /// collection would instead represent a successful result with no products.
-    /// Unresponsive mode waits for cancellation without blocking a thread.
-    /// </remarks>
-    private async Task<IReadOnlyList<ProductPrice>?> FetchProductsAsync(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
 
-        SimulatedServiceMode mode = Mode;
-
-        if (mode == SimulatedServiceMode.Unavailable)
-        {
-            return null;
-        }
-
-        if (mode == SimulatedServiceMode.Unresponsive)
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-        }
-
-        await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
-
-        return Array.AsReadOnly(
-            new[]
-            {
-                new ProductPrice("Coffee", NextPrice(12m)),
-                new ProductPrice("Tea", NextPrice(8m)),
-                new ProductPrice("Chocolate", NextPrice(5m))
-            });
-    }
-
-    private static decimal NextPrice(decimal minimum)
-    {
-        return minimum + Random.Shared.Next(0, 501) / 100m;
-    }
 
     /// <summary>
     /// Preserves the cache and records degradation on the first failed refresh.

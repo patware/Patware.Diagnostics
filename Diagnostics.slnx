@@ -8,6 +8,7 @@
     <Project Path="src/Metrics/Metrics.Core/Metrics.Core.csproj" />
   </Folder>
   <Folder Name="/SampleApplications/">
+    <Project Path="SampleApplications/SampleApplications.Shared/SampleApplications.Shared.csproj" Id="7163caa6-bbab-47b3-92ee-f964fe1a7e81" />
     <Project Path="SampleApplications/SampleBlazorApp/SampleBlazorApp.csproj" Id="5b8ddbe8-6a4f-40d3-aa3f-9467512e1d2b" />
     <Project Path="SampleApplications/SampleConsole/SampleConsole.csproj" />
     <Project Path="SampleApplications/SampleManualEventsConsole/SampleManualEventsConsole.csproj" Id="f2aa6324-2d85-4810-94c2-deeeda26d172" />

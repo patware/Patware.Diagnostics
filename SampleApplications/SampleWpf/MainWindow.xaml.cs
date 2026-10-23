@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 
 using Patware.Diagnostics.ApplicationEvents;
 
+using SampleApplications.Shared;
+
 namespace SampleWpf;
 
 /// <summary>
@@ -169,7 +171,7 @@ public partial class MainWindow : Window
 
         try
         {
-            decimal? result = await FetchPriceAsync(_serviceMode, request.Token);
+            ProductServiceResult result = await SimulatedProductService.FetchAsync(_serviceMode, request.Token);
 
             // Cancellation can arrive after the service finishes but before
             // the dispatcher resumes this handler.
@@ -180,7 +182,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (result is not decimal price)
+            if (!result.IsAvailable)
             {
                 _logger.External.ServiceUnavailable(
                     externalName: "ProductService",
@@ -195,6 +197,10 @@ public partial class MainWindow : Window
 
                 return;
             }
+
+            decimal price = result.Products
+                .Single(product => product.Name == "Coffee")
+                .Price;
 
             _cachedPrice = price;
             _cachedAt = DateTimeOffset.UtcNow;
@@ -290,38 +296,6 @@ public partial class MainWindow : Window
         CatalogStatusText.Text = "Refresh to observe the selected service behavior.";
     }
 
-    /// <summary>
-    /// Simulates a coffee-price request using the selected dependency behavior.
-    /// </summary>
-    /// <param name="mode">The behavior captured when the request begins.</param>
-    /// <param name="cancellationToken">Cancellation for this request.</param>
-    /// <returns>
-    /// A coffee price, or null when the service explicitly reports unavailability.
-    /// </returns>
-    /// <remarks>
-    /// Unavailable mode returns a normal result without manufacturing an
-    /// exception. Unresponsive mode waits for the caller's cancellation.
-    /// </remarks>
-    private static async Task<decimal?> FetchPriceAsync(
-        SimulatedServiceMode mode,
-        CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (mode == SimulatedServiceMode.Unavailable)
-        {
-            return null;
-        }
-
-        if (mode == SimulatedServiceMode.Unresponsive)
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-        }
-
-        await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
-
-        return 12m + Random.Shared.Next(0, 501) / 100m;
-    }
 
     /// <inheritdoc />
     protected override void OnClosed(EventArgs e)

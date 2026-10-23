@@ -99,3 +99,20 @@ recovery. The application remains degraded until a successful refresh.
 
 See the catalog entries for [601 — OperationTimedOut](EVENT-CATALOG.md#event-601)
 and [602 — ServiceUnavailable](EVENT-CATALOG.md#event-602) for the complete contracts.
+
+## Shared sample simulation
+
+The Blazor, Worker Service, and WPF samples use the non-packable
+SampleApplications.Shared project for simulated dependency behavior,
+product data, and explicit operation results.
+
+The shared project has no dependency on Patware.Diagnostics. It does not
+emit events, manage caches, impose timeouts, or track application mode.
+
+Each application retains its controls, cancellation policy, cached fallback,
+and event emission. This keeps the diagnostic flow visible in each sample
+while ensuring that simulated dependency behavior is consistent.
+
+Unavailable results are distinct from successful responses containing no
+products. Timeout and shutdown cancellation continue to propagate to the
+calling application for classification.
