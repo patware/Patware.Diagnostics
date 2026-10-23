@@ -34,14 +34,14 @@
                         Click="Refresh_Button_Click" />
 
         <Button x:Name="AvailabilityButton"
-                        Content="Simulate service outage"
+                        Content="Simulate timeout"
                         Padding="12,8"
                         Margin="0,0,0,8"
                         Click="Availability_Button_Click" />
       </WrapPanel>
 
       <TextBlock x:Name="AvailabilityText"
-                       Text="Simulated service: available"
+                       Text="Refresh the price from our simulated product service. If the refresh fails, the last successful value remains available."
                        Margin="0,4,0,12" />
 
       <Border x:Name="WarningPanel"

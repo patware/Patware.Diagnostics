@@ -339,7 +339,7 @@ public readonly struct ApplicationEvents
     /// </exception>
     public void UnhandledException(Exception @exception)
     {
-      ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
+        ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
         ApplicationEventMessages.UnhandledException(Logger, @exception);
     }
 
@@ -712,8 +712,40 @@ public readonly struct ExternalEvents
     /// </exception>
     public void OperationTimedOut(string @externalName, string @operationName, string @operationId, double @timeoutMilliseconds, Exception @exception)
     {
-      ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
+        ArgumentNullException.ThrowIfNull(@exception, nameof(@exception));
         ExternalEventMessages.OperationTimedOut(Logger, @externalName, @operationName, @operationId, @timeoutMilliseconds, @exception);
+    }
+
+    /// <summary>
+    /// Reports that an external dependency could not serve an operation because of an observed availability failure.
+    /// </summary>
+    /// <param name="externalName">The stable logical name of the dependency, without credentials or request-specific data.</param>
+    /// <param name="operationName">The stable logical name of the operation the dependency could not serve.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <param name="reasonCode">A stable application-defined classification of the observed availability failure, such as ServiceUnavailable. Do not include response bodies or exception messages.</param>
+    /// <param name="exception">The original exception associated with the availability failure, or null when the dependency returned an unavailable result without throwing.</param>
+    /// <remarks>
+    /// <para>Emit when the caller receives an explicit unavailable result or establishes that a dependency exception represents an availability failure.</para>
+    /// <para>This event describes availability from the caller&apos;s perspective for one operation attempt. It does not establish that the service is unavailable to every caller.</para>
+    /// <para>Use OperationTimedOut for an operation that exceeded its timeout budget. Do not emit both events merely to describe the same timeout.</para>
+    /// <para>Do not classify every unsuccessful response or exception as service unavailability. Authentication, authorization, invalid requests, and business rejections have different meanings.</para>
+    /// <para>A locally open circuit breaker does not establish the dependency&apos;s current availability because the operation was not attempted.</para>
+    /// <para>ReasonCode is an application-defined classification suitable for grouping and alerting. Use a small documented set of values rather than request-specific text.</para>
+    /// <para>Pass the original exception when one exists. Pass null for an unavailable result returned without an exception; do not manufacture an exception solely for logging.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>Emit once per failed attempt at the boundary responsible for reporting the dependency operation. Use a higher-level scope or trace to correlate retries.</para>
+    /// <para>A failed attempt does not automatically change application mode. Emit Application_InDegradedMode separately when functionality becomes reduced and Application_InNormalMode after recovery.</para>
+    /// <para>User cancellation and application shutdown are not availability failures.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not retry requests, operate a circuit breaker, or change application state.</para>
+    /// <para>Status: Stable. Introduced: 0.0.6.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ServiceUnavailable(string @externalName, string @operationName, string @operationId, string @reasonCode, Exception? @exception)
+    {
+        ExternalEventMessages.ServiceUnavailable(Logger, @externalName, @operationName, @operationId, @reasonCode, @exception);
     }
 
 }
@@ -735,5 +767,13 @@ internal static partial class ExternalEventMessages
         Message = "External operation timed out. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Timeout: {TimeoutMilliseconds} milliseconds.")]
     internal static partial void OperationTimedOut(
         ILogger logger, string ExternalName, string OperationName, string OperationId, double TimeoutMilliseconds, Exception Exception);
+
+    [LoggerMessage(
+        EventId = 602,
+        EventName = "External_ServiceUnavailable",
+        Level = LogLevel.Error,
+        Message = "External service unavailable. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Reason: {ReasonCode}.")]
+    internal static partial void ServiceUnavailable(
+        ILogger logger, string ExternalName, string OperationName, string OperationId, string ReasonCode, Exception? Exception);
 
 }

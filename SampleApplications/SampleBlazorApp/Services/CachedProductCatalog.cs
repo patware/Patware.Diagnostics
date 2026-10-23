@@ -36,12 +36,12 @@ public sealed class CachedProductCatalog : IDisposable
     private readonly IHostEnvironment _environment;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
+    private int _mode = (int)SimulatedServiceMode.Available;
+
     private CatalogSnapshot _snapshot = new(
         Array.Empty<ProductPrice>(),
         UpdatedAt: null,
         IsDegraded: false);
-
-    private int _available = 1;
 
     /// <summary>
     /// Initializes the shared simulation.
@@ -69,27 +69,34 @@ public sealed class CachedProductCatalog : IDisposable
     public CatalogSnapshot Snapshot => Volatile.Read(ref _snapshot);
 
     /// <summary>
-    /// Gets whether subsequent dependency calls can succeed.
+    /// Gets the mode used by subsequent simulated requests.
     /// </summary>
-    public bool IsAvailable => Volatile.Read(ref _available) != 0;
+    public SimulatedServiceMode Mode => (SimulatedServiceMode)Volatile.Read(ref _mode);
 
     /// <summary>
-    /// Sets the simulated dependency's availability.
+    /// Sets the mode used by subsequent simulated requests.
     /// </summary>
-    /// <param name="available">Whether subsequent calls should succeed.</param>
+    /// <param name="mode">The dependency behavior to simulate.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The supplied mode is not defined.
+    /// </exception>
     /// <remarks>
-    /// This development-only backdoor does not emit operating-mode events.
-    /// Availability alone does not establish that a failed operation recovered.
-    /// An in-flight request retains the availability observed when it began.
+    /// This development-only control does not emit events. A request retains
+    /// the mode observed when it begins; recovery requires a successful refresh.
     /// </remarks>
-    public void SetAvailability(bool available)
+    public void SetMode(SimulatedServiceMode mode)
     {
+        if (!Enum.IsDefined(mode))
+        {
+            throw new ArgumentOutOfRangeException(nameof(mode));
+        }
+
         if (!_environment.IsDevelopment())
         {
             return;
         }
 
-        Interlocked.Exchange(ref _available, available ? 1 : 0);
+        Interlocked.Exchange(ref _mode, (int)mode);
     }
 
     /// <summary>
@@ -98,13 +105,13 @@ public sealed class CachedProductCatalog : IDisposable
     /// <remarks>
     /// Refreshes are serialized across sessions so an older request cannot
     /// overwrite a newer result or produce contradictory mode transitions.
-    /// Timeouts preserve the last successful cache. Host shutdown cancellation
+    /// Failed refreshes preserve the last successful cache. Host shutdown cancellation
     /// is propagated rather than reported as application degradation.
     /// <para>
-    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
-    /// and the original exception. Event 401 is emitted only when entering
-    /// degraded mode, and event 204 only after a successful refresh restores
-    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// Confirmed timeouts emit event 601; explicit unavailable results emit
+    /// event 602 without an exception. Each failed attempt has its own identifier.
+    /// Event 401 occurs only when entering degraded mode, and event 204 occurs
+    /// only after a successful refresh. Shutdown cancellation propagates.
     /// </para>
     /// </remarks>
     /// <exception cref="OperationCanceledException">
@@ -127,9 +134,22 @@ public sealed class CachedProductCatalog : IDisposable
 
             try
             {
-                IReadOnlyList<ProductPrice> products = await FetchProductsAsync(request.Token);
+                IReadOnlyList<ProductPrice>? products = await FetchProductsAsync(request.Token);
 
                 stopping.ThrowIfCancellationRequested();
+
+                if (products is null)
+                {
+                    _logger.External.ServiceUnavailable(
+                        externalName: "ProductService",
+                        operationName: "FetchProducts",
+                        operationId: operationId,
+                        reasonCode: "ServiceUnavailable",
+                        exception: null);
+
+                    MarkDegraded("Product service reported unavailability");
+                    return;
+                }
 
                 CatalogSnapshot previous = Snapshot;
 
@@ -156,19 +176,7 @@ public sealed class CachedProductCatalog : IDisposable
                     timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
                     exception: exception);
 
-                CatalogSnapshot previous = Snapshot;
-
-                Volatile.Write(
-                    ref _snapshot,
-                    previous with { IsDegraded = true });
-
-                if (!previous.IsDegraded)
-                {
-                    _logger.Application.InDegradedMode(
-                        reason: previous.UpdatedAt.HasValue
-                            ? "Product service timed out; serving cached prices."
-                            : "Product service timed out; no cached prices are available.");
-                }
+                MarkDegraded("Product service timed out");
             }
         }
         finally
@@ -186,19 +194,29 @@ public sealed class CachedProductCatalog : IDisposable
     }
 
     /// <summary>
-    /// Simulates an asynchronous call to the product service.
+    /// Simulates a request to the product dependency.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation for the simulated request.</param>
-    /// <returns>A new, read-only collection of simulated prices.</returns>
+    /// <param name="cancellationToken">Cancellation for this request.</param>
+    /// <returns>
+    /// Fresh prices, or null when the service explicitly reports unavailability.
+    /// </returns>
     /// <remarks>
-    /// An unavailable service waits until the caller cancels its request,
-    /// demonstrating an actual timeout rather than an immediate failure.
+    /// Null is the explicit unavailable result for this sample; an empty
+    /// collection would instead represent a successful result with no products.
+    /// Unresponsive mode waits for cancellation without blocking a thread.
     /// </remarks>
-    private async Task<IReadOnlyList<ProductPrice>> FetchProductsAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ProductPrice>?> FetchProductsAsync(CancellationToken cancellationToken)
     {
-        bool availableAtRequestStart = IsAvailable;
+        cancellationToken.ThrowIfCancellationRequested();
 
-        if (!availableAtRequestStart)
+        SimulatedServiceMode mode = Mode;
+
+        if (mode == SimulatedServiceMode.Unavailable)
+        {
+            return null;
+        }
+
+        if (mode == SimulatedServiceMode.Unresponsive)
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
         }
@@ -217,5 +235,30 @@ public sealed class CachedProductCatalog : IDisposable
     private static decimal NextPrice(decimal minimum)
     {
         return minimum + Random.Shared.Next(0, 501) / 100m;
+    }
+
+    /// <summary>
+    /// Preserves the cache and records degradation on the first failed refresh.
+    /// </summary>
+    /// <param name="failure">A description of the observed dependency failure.</param>
+    /// <remarks>
+    /// Called while the refresh gate is held. Changing between failure kinds
+    /// does not represent recovery and therefore does not repeat event 401.
+    /// </remarks>
+    private void MarkDegraded(string failure)
+    {
+        CatalogSnapshot previous = Snapshot;
+
+        Volatile.Write(
+            ref _snapshot,
+            previous with { IsDegraded = true });
+
+        if (!previous.IsDegraded)
+        {
+            _logger.Application.InDegradedMode(
+                reason: previous.UpdatedAt.HasValue
+                    ? $"{failure}; serving cached prices."
+                    : $"{failure}; no cached prices are available.");
+        }
     }
 }

@@ -3,6 +3,27 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.6 - Unreleased
+
+### Added
+
+- Event 602, `External_ServiceUnavailable`, through
+  `logger.External.ServiceUnavailable()`.
+  - Reports the dependency, operation, attempt identifier, and reason code.
+  - Accepts the original exception or null for an unavailable result returned
+    without an exception.
+- Immediate unavailability demonstrations in the Blazor, Worker Service, and
+  WPF samples, alongside the existing timeout and cached-fallback scenarios.
+- Contract tests covering nullable exceptions, structured properties,
+  filtering, event-group guards, and independent attempts.
+- Guidance distinguishing operation timeouts from service unavailability,
+  including Worker trigger-file precedence and application recovery.
+
+### Changed
+
+- Extended catalog generation to support nullable exception arguments while
+  preserving required-exception validation for events 601 and 701.
+
 ## 0.0.5 - 2026-10-20
 
 ### Added

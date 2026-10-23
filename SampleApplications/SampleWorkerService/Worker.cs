@@ -11,12 +11,13 @@ namespace SampleWorkerService;
 /// <para>
 /// Trigger paths are resolved against the current working directory and
 /// logged at startup. Stop and exception files are consumed before their
-/// actions execute. The degraded file remains until the operator removes it.
+/// actions execute. The degraded and unavailable files remain until removed.
 /// </para>
 /// <para>
-/// The degraded file simulates an unavailable dependency. A timed-out refresh
-/// establishes degradation; a successful refresh establishes recovery.
-/// Application events are emitted only when the operating mode changes.
+/// The degraded file simulates an unresponsive dependency; the unavailable
+/// file simulates immediate rejection and takes precedence when both exist.
+/// Failed refreshes establish degradation; a successful refresh establishes
+/// recovery. Application mode events occur only when the mode changes.
 /// </para>
 /// <para>
 /// The cache is in memory and does not survive a process restart.
@@ -38,6 +39,7 @@ public sealed class Worker(
         string stopFilePath = Path.GetFullPath("stop.txt");
         string exceptionFilePath = Path.GetFullPath("exception.txt");
         string degradedFilePath = Path.GetFullPath("degraded.txt");
+        string unavailableFilePath = Path.GetFullPath("unavailable.txt");
 
         logger.LogInformation(
             "For graceful shutdown, create {StopFilePath}",
@@ -48,9 +50,13 @@ public sealed class Worker(
             exceptionFilePath);
 
         logger.LogInformation(
-            "To simulate a product-service outage, create {DegradedFilePath}. " +
-            "Remove it to allow the next refresh to recover.",
+            "To simulate an unresponsive product service, create {DegradedFilePath}.",
             degradedFilePath);
+
+        logger.LogInformation(
+            "To simulate immediate service unavailability, create {UnavailableFilePath}. " +
+            "This takes precedence over degraded.txt. Remove both files to allow recovery.",
+            unavailableFilePath);
 
         try
         {
@@ -87,7 +93,7 @@ public sealed class Worker(
                     return;
                 }
 
-                await RefreshPriceAsync(degradedFilePath, stoppingToken);
+                await RefreshPriceAsync(degradedFilePath, unavailableFilePath, stoppingToken);
 
                 // This delay also bounds routine sample log volume.
                 await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
@@ -101,23 +107,27 @@ public sealed class Worker(
     }
 
     /// <summary>
-    /// Refreshes the cached price or retains it when the service times out.
+    /// Refreshes the cached price or retains it when the dependency fails.
     /// </summary>
     /// <param name="degradedFilePath">The persistent simulated-outage switch.</param>
+    /// <param name="unavailableFilePath">
+    /// The persistent switch for immediate service unavailability.
+    /// </param>
     /// <param name="stoppingToken">Cancellation requested by host shutdown.</param>
     /// <remarks>
     /// The worker executes refreshes sequentially, so no additional locking
     /// is needed for its cache or operating-mode state.
     /// Recovery is recorded only after a successful response replaces the cache.
     /// <para>
-    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
-    /// and the original exception. Event 401 is emitted only when entering
-    /// degraded mode, and event 204 only after a successful refresh restores
-    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// Confirmed timeouts emit event 601; explicit unavailable results emit
+    /// event 602 without an exception. Each failed attempt has its own identifier.
+    /// Event 401 occurs only when entering degraded mode, and event 204 occurs
+    /// only after a successful refresh. Shutdown cancellation propagates.
     /// </para>
     /// </remarks>
     private async Task RefreshPriceAsync(
         string degradedFilePath,
+        string unavailableFilePath,
         CancellationToken stoppingToken)
     {
         string operationId = Guid.NewGuid().ToString("N");
@@ -132,11 +142,25 @@ public sealed class Worker(
 
         try
         {
-            decimal price = await FetchPriceAsync(
+            decimal? result = await FetchPriceAsync(
                 degradedFilePath,
+                unavailableFilePath,
                 request.Token);
 
             stoppingToken.ThrowIfCancellationRequested();
+
+            if (result is not decimal price)
+            {
+                logger.External.ServiceUnavailable(
+                    externalName: "ProductService",
+                    operationName: "FetchPrice",
+                    operationId: operationId,
+                    reasonCode: "ServiceUnavailable",
+                    exception: null);
+
+                UseCachedPrice("Product service reported unavailability");
+                return;
+            }
 
             _cachedPrice = price;
             _cachedAt = DateTimeOffset.UtcNow;
@@ -165,61 +189,48 @@ public sealed class Worker(
                 exception: exception);
 
 
-            if (!_isDegraded)
-            {
-                _isDegraded = true;
-
-                logger.Application.InDegradedMode(
-                    reason: _cachedPrice.HasValue
-                        ? "Product service timed out; using the cached coffee price."
-                        : "Product service timed out; no cached coffee price is available.");
-            }
-
-            if (_cachedPrice is decimal cachedPrice)
-            {
-                logger.LogInformation(
-                    "Refresh timed out. Using cached coffee price: " +
-                    "{Price} CAD, last refreshed at {FetchedAt}",
-                    cachedPrice,
-                    _cachedAt);
-            }
-            else
-            {
-                logger.LogInformation(
-                    "Refresh timed out. No cached price is available; " +
-                    "waiting for a successful refresh.");
-            }
+            UseCachedPrice("Product service timed out");
         }
     }
 
     /// <summary>
-    /// Simulates fetching a coffee price from an unreliable service.
+    /// Simulates fetching a coffee price from the product dependency.
     /// </summary>
-    /// <param name="degradedFilePath">The file indicating a simulated outage.</param>
-    /// <param name="cancellationToken">Cancellation for this service request.</param>
-    /// <returns>The simulated coffee price in CAD.</returns>
+    /// <param name="degradedFilePath">The switch for an unresponsive service.</param>
+    /// <param name="unavailableFilePath">
+    /// The switch for an immediate unavailable result.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation for this request.</param>
+    /// <returns>
+    /// A coffee price, or null when the service explicitly reports unavailability.
+    /// </returns>
     /// <remarks>
-    /// Availability is sampled when the request begins. Removing the file
-    /// during an unavailable request allows the next request to succeed.
-    /// The file's contents are irrelevant; its presence controls the simulation.
+    /// Switches are evaluated when the request begins. The unavailable switch
+    /// takes precedence when both files exist. File contents are ignored.
+    /// Removing a switch does not change an already pending request.
     /// </remarks>
-    private static async Task<decimal> FetchPriceAsync(
+    private static async Task<decimal?> FetchPriceAsync(
         string degradedFilePath,
+        string unavailableFilePath,
         CancellationToken cancellationToken)
     {
-        if (File.Exists(degradedFilePath))
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (File.Exists(unavailableFilePath))
         {
-            await Task.Delay(
-                Timeout.InfiniteTimeSpan,
-                cancellationToken);
+            return null;
         }
 
-        await Task.Delay(
-            TimeSpan.FromMilliseconds(350),
-            cancellationToken);
+        if (File.Exists(degradedFilePath))
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+        }
+
+        await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
 
         return 12m + Random.Shared.Next(0, 501) / 100m;
     }
+
 
     /// <summary>
     /// Starts a thread that deliberately raises an unhandled exception.
@@ -243,5 +254,41 @@ public sealed class Worker(
         };
 
         crashThread.Start();
+    }
+
+    /// <summary>
+    /// Retains cached values and reports the consequences of a failed refresh.
+    /// </summary>
+    /// <param name="failure">The observed dependency failure.</param>
+    /// <remarks>
+    /// Every failed attempt is reported separately by its caller. Application
+    /// degradation is reported only on the first transition into reduced service.
+    /// </remarks>
+    private void UseCachedPrice(string failure)
+    {
+        if (!_isDegraded)
+        {
+            _isDegraded = true;
+
+            logger.Application.InDegradedMode(
+                reason: _cachedPrice.HasValue
+                    ? $"{failure}; using the cached coffee price."
+                    : $"{failure}; no cached coffee price is available.");
+        }
+
+        if (_cachedPrice is decimal cachedPrice)
+        {
+            logger.LogInformation(
+                "Refresh failed. Using cached coffee price: " +
+                "{Price} CAD, last refreshed at {FetchedAt}",
+                cachedPrice,
+                _cachedAt);
+        }
+        else
+        {
+            logger.LogInformation(
+                "Refresh failed. No cached price is available; " +
+                "waiting for a successful refresh.");
+        }
     }
 }

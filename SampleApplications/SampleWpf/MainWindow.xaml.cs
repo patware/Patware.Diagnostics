@@ -21,9 +21,10 @@ public partial class MainWindow : Window
     private readonly IHostApplicationLifetime _lifetime;
     private bool _actionRequested;
 
-    private bool _serviceAvailable = true;
+    private SimulatedServiceMode _serviceMode = SimulatedServiceMode.Available;
     private bool _refreshing;
     private bool _isDegraded;
+
     private bool _closed;
 
     private decimal? _cachedPrice;
@@ -131,17 +132,17 @@ public partial class MainWindow : Window
 
 
     /// <summary>
-    /// Refreshes the simulated price while preserving cached data on timeout.
+    /// Refreshes the simulated price while preserving cached data on failure.
     /// </summary>
     /// <remarks>
     /// WPF resumes this handler on the dispatcher, keeping cache transitions
     /// and UI updates serialized. Repeated failures emit no additional 401,
     /// and successful startup does not produce recovery event 204.
     /// <para>
-    /// Each confirmed timeout emits event 601 with a distinct attempt identifier
-    /// and the original exception. Event 401 is emitted only when entering
-    /// degraded mode, and event 204 only after a successful refresh restores
-    /// normal operation. Shutdown cancellation is not reported as a timeout.
+    /// Confirmed timeouts emit event 601; explicit unavailable results emit
+    /// event 602 without an exception. Each failed attempt has its own identifier.
+    /// Event 401 occurs only when entering degraded mode, and event 204 occurs
+    /// only after a successful refresh. Shutdown cancellation is handled separately.
     /// </para>
     /// </remarks>
     private async void Refresh_Button_Click(object sender, RoutedEventArgs e)
@@ -168,7 +169,7 @@ public partial class MainWindow : Window
 
         try
         {
-            decimal price = await FetchPriceAsync(_serviceAvailable, request.Token);
+            decimal? result = await FetchPriceAsync(_serviceMode, request.Token);
 
             // Cancellation can arrive after the service finishes but before
             // the dispatcher resumes this handler.
@@ -176,6 +177,22 @@ public partial class MainWindow : Window
 
             if (_closed || _actionRequested)
             {
+                return;
+            }
+
+            if (result is not decimal price)
+            {
+                _logger.External.ServiceUnavailable(
+                    externalName: "ProductService",
+                    operationName: "FetchPrice",
+                    operationId: operationId,
+                    reasonCode: "ServiceUnavailable",
+                    exception: null);
+
+                ShowFailedRefresh(
+                    failure: "Product service reported unavailability",
+                    status: "Service unavailable.");
+
                 return;
             }
 
@@ -211,27 +228,9 @@ public partial class MainWindow : Window
                 timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
                 exception: exception);
 
-            if (!_isDegraded)
-            {
-                _isDegraded = true;
-
-                _logger.Application.InDegradedMode(
-                    reason: _cachedPrice.HasValue
-                        ? "Product service timed out; displaying the cached coffee price."
-                        : "Product service timed out; no cached coffee price is available.");
-            }
-
-            WarningText.Text = _cachedPrice.HasValue
-                ? "We’re having trouble updating prices. Your last saved price "
-                  + "is still available below, but may be out of date. "
-                  + "Please try refreshing again."
-                : "We’re having trouble loading prices and don’t have a saved "
-                  + "price to show yet. Please try refreshing again.";
-
-            WarningPanel.Visibility = Visibility.Visible;
-            CatalogStatusText.Text = "Refresh timed out.";
-
-            // Leave the displayed price and successful-refresh timestamp intact.
+            ShowFailedRefresh(
+                failure: "Product service timed out",
+                status: "Refresh timed out.");
         }
         catch (Exception exception)
         {
@@ -260,11 +259,11 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Toggles availability for the next simulated service request.
+    /// Cycles the behavior of subsequent simulated requests.
     /// </summary>
     /// <remarks>
-    /// Restoring availability does not establish recovery. The warning remains
-    /// until a successful refresh replaces the cache and emits event 204.
+    /// Changing the simulation does not establish recovery. A successful
+    /// refresh must replace the cache before event 204 is emitted.
     /// </remarks>
     private void Availability_Button_Click(object sender, RoutedEventArgs e)
     {
@@ -273,34 +272,48 @@ public partial class MainWindow : Window
             return;
         }
 
-        _serviceAvailable = !_serviceAvailable;
+        _serviceMode = _serviceMode switch
+        {
+            SimulatedServiceMode.Available => SimulatedServiceMode.Unresponsive,
+            SimulatedServiceMode.Unresponsive => SimulatedServiceMode.Unavailable,
+            _ => SimulatedServiceMode.Available
+        };
 
-        AvailabilityButton.Content = _serviceAvailable
-            ? "Simulate service outage"
-            : "Restore service availability";
+        AvailabilityButton.Content = _serviceMode switch
+        {
+            SimulatedServiceMode.Available => "Simulate timeout",
+            SimulatedServiceMode.Unresponsive => "Simulate immediate unavailability",
+            _ => "Restore service availability"
+        };
 
-        AvailabilityText.Text = _serviceAvailable
-            ? "Simulated service: available"
-            : "Simulated service: unavailable";
-
-        CatalogStatusText.Text = _serviceAvailable
-            ? "Availability restored. Refresh to verify recovery."
-            : "Outage enabled. Refresh to exercise the cached fallback.";
+        AvailabilityText.Text = $"Simulated service: {_serviceMode}";
+        CatalogStatusText.Text = "Refresh to observe the selected service behavior.";
     }
 
     /// <summary>
-    /// Simulates fetching a coffee price from an unreliable dependency.
+    /// Simulates a coffee-price request using the selected dependency behavior.
     /// </summary>
-    /// <param name="available">Whether this request can succeed.</param>
-    /// <param name="cancellationToken">Cancellation for the simulated request.</param>
-    /// <returns>The simulated coffee price in CAD.</returns>
+    /// <param name="mode">The behavior captured when the request begins.</param>
+    /// <param name="cancellationToken">Cancellation for this request.</param>
+    /// <returns>
+    /// A coffee price, or null when the service explicitly reports unavailability.
+    /// </returns>
     /// <remarks>
-    /// An unavailable dependency waits until the caller cancels the request.
-    /// This demonstrates a timeout without blocking the WPF dispatcher.
+    /// Unavailable mode returns a normal result without manufacturing an
+    /// exception. Unresponsive mode waits for the caller's cancellation.
     /// </remarks>
-    private static async Task<decimal> FetchPriceAsync(bool available, CancellationToken cancellationToken)
+    private static async Task<decimal?> FetchPriceAsync(
+        SimulatedServiceMode mode,
+        CancellationToken cancellationToken)
     {
-        if (!available)
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (mode == SimulatedServiceMode.Unavailable)
+        {
+            return null;
+        }
+
+        if (mode == SimulatedServiceMode.Unresponsive)
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
         }
@@ -320,5 +333,37 @@ public partial class MainWindow : Window
         _activeRequest?.Cancel();
 
         base.OnClosed(e);
+    }
+
+    /// <summary>
+    /// Displays a failed refresh while preserving the previous cached value.
+    /// </summary>
+    /// <param name="failure">The dependency failure used in event 401.</param>
+    /// <param name="status">The refresh outcome displayed in the window.</param>
+    /// <remarks>
+    /// Called on the dispatcher. Failure-kind changes do not repeat event 401
+    /// or alter the successful-refresh timestamp.
+    /// </remarks>
+    private void ShowFailedRefresh(string failure, string status)
+    {
+        if (!_isDegraded)
+        {
+            _isDegraded = true;
+
+            _logger.Application.InDegradedMode(
+                reason: _cachedPrice.HasValue
+                    ? $"{failure}; displaying the cached coffee price."
+                    : $"{failure}; no cached coffee price is available.");
+        }
+
+        WarningText.Text = _cachedPrice.HasValue
+            ? "We’re having trouble updating prices. Your last saved price " +
+              "is still available below, but may be out of date. " +
+              "Please try refreshing again."
+            : "We’re having trouble loading prices and don’t have a saved " +
+              "price to show yet. Please try refreshing again.";
+
+        WarningPanel.Visibility = Visibility.Visible;
+        CatalogStatusText.Text = status;
     }
 }
