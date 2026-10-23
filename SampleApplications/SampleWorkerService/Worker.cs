@@ -170,19 +170,6 @@ public sealed class Worker(
                 .Single(product => product.Name == "Coffee")
                 .Price;
 
-            if (!result.IsAvailable)
-            {
-                logger.External.ServiceUnavailable(
-                    externalName: "ProductService",
-                    operationName: "FetchPrice",
-                    operationId: operationId,
-                    reasonCode: "ServiceUnavailable",
-                    exception: null);
-
-                UseCachedPrice("Product service reported unavailability");
-                return;
-            }
-
             _cachedPrice = price;
             _cachedAt = DateTimeOffset.UtcNow;
 
