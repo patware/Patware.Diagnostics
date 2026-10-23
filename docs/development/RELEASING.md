@@ -313,28 +313,26 @@ To publish:
 6. Confirm its commit, version, notes, and package contents.
 7. Approve the `release` environment when the candidate is accepted.
 
-Each workflow run prepares a new candidate. The publication run does not
-reuse the artifact from a preceding candidate-only run. If `main` advanced,
-the new candidate may contain additional commits.
+The workflow separates publication from finalization.
 
-Within the publication run, the publish job downloads and verifies the
-candidate produced by that same run; it does not rebuild the packages.
-
-The workflow then:
+The approved publication job:
 
 1. Verifies candidate identity and checksums.
-2. Checks for an existing tag, GitHub release, or package version.
+2. Rejects an existing tag, GitHub release, or package version.
 3. Authenticates with NuGet.
 4. Creates a draft GitHub release with candidate assets.
 5. Publishes packages and matching symbols in dependency order.
-6. Waits for NuGet package availability.
-7. Publishes the GitHub release.
 
-Do not create or push the version tag manually beforehand. The workflow
-manages the release/tag and rejects an existing tag.
+The finalization job:
 
-The workflow generates documentation during preparation but does not deploy
-the documentation site to a hosting service.
+1. Downloads the same candidate from the same workflow run.
+2. Verifies candidate identity and checksums.
+3. Checks the existing GitHub release, assets, and any existing version tag.
+4. Waits up to 60 minutes for the package versions to become downloadable.
+5. Rechecks the GitHub release and publishes the matching draft.
+
+An already-published matching release is accepted as completed.
+Finalization does not rebuild or upload packages and has no NuGet credentials.
 
 ## 11. Confirm publication
 
@@ -351,27 +349,49 @@ symbol indexing.
 
 ## Publication failures
 
-Before any remote publication occurs, fix the cause and prepare a new
-candidate through the normal review process.
+### Preparation failed
 
-If a draft release or any package was already created, do not blindly rerun
-the workflow. Its duplicate checks intentionally reject existing release
-state.
+Before remote publication begins, fix the cause and prepare a new candidate
+through the normal review process.
 
-Record:
+### Package publication failed
 
-- Workflow run and commit.
-- Candidate artifact and manifest.
-- Packages and symbols already uploaded.
-- GitHub draft/release state.
-- The exact failing step.
+If the publication job created a draft or uploaded any package, inspect the
+partial publication before retrying. Its duplicate checks intentionally
+reject existing release state.
 
-A maintainer must inspect that state and plan recovery. Preserve the original
-candidate when completing a partial publication; do not rebuild different
-bytes under the same package version.
+Record the workflow run, commit, candidate manifest, uploaded packages and
+symbols, existing GitHub release, and exact failing step.
 
-If packages are available but finalizing the GitHub release failed, verify
-the existing draft and assets before completing that release.
+Preserve the original candidate. Do not rebuild different bytes under the
+same package version or bypass duplicate checks without investigating.
+
+### Finalization failed
+
+If the publication job succeeded and only Finalize published candidate
+failed, inspect the error and rerun only that job in the same workflow run.
+
+Do not rerun all jobs or start a new publication run for that version.
+The finalization job reuses the original candidate and never pushes packages.
+
+An availability timeout means package availability was not confirmed within
+the waiting period. It does not mean package upload failed.
+
+A candidate, asset, or tag mismatch requires investigation before retrying.
+Do not bypass verification to finalize a different release.
+
+Workflow artifacts are retained for 30 days. If the original artifact has
+expired, automatic finalization cannot recover it; maintainer investigation
+is required.
+
+### Runs created before finalization was separated
+
+Old runs retain their original workflow. Rerunning them does not acquire
+this recovery behavior.
+
+When packages from such a run are already available, verify the original
+candidate, existing draft, assets, and target commit before manually
+publishing that draft. Do not push the packages again.
 
 ## Common problems
 
@@ -385,3 +405,5 @@ the existing draft and assets before completing that release.
 | DocFX command is unavailable | Install the version used by the workflows. |
 | Generated event files are outdated | Regenerate, review, and commit both generated outputs. |
 | Tag, release, or package already exists | Inspect previous publication state before attempting recovery. |
+| Finalization timed out after successful uploads | Inspect NuGet availability, then rerun only Finalize published candidate in the original run. |
+| Finalization reports an asset or tag mismatch | Investigate the existing release against the original candidate; do not bypass verification. |
