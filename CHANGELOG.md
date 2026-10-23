@@ -3,7 +3,7 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
-## 0.0.6 - 2026-10.22
+## 0.0.6 - 2026-10-22
 
 ### Added
 
