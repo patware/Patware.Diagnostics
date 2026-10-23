@@ -130,7 +130,12 @@ try {
 
   Write-Host "   - MD Documentation"
 
-  & docfx build docs/docfx.json --warningsAsErrors | Out-Host
+  # Identify the source version used to build this documentation.
+  # VERSION remains the single source of truth.
+  & docfx build docs/docfx.json `
+    --warningsAsErrors `
+    --metadata "_appFooter=Patware.Diagnostics documentation · v$version" |
+    Out-Host
 
   if ($LASTEXITCODE -ne 0) {
     throw 'Documentation generation failed.'
