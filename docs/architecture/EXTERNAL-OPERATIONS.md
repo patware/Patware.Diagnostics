@@ -114,14 +114,24 @@ Authentication failures, authorization failures, invalid requests, business
 rejections, and local circuit-breaker rejections must not automatically
 be classified as service unavailability.
 
-The samples use `ServiceUnavailable` as their reason code. Applications
-should document a small stable vocabulary for any additional reason codes.
+The samples use these reason codes:
+
+| Event | ReasonCode |
+|---|---|
+| 502 — AuthenticationFailed | `AuthenticationRejected` |
+| 503 — AuthorizationFailed | `PermissionDenied` |
+| 602 — ServiceUnavailable | `ServiceUnavailable` |
+
+Applications should document a small stable vocabulary for any additional
+reason codes.
 
 Switching from timeout failures to unavailable results does not establish
 recovery. The application remains degraded until a successful refresh.
 
-See the catalog entries for [601 — OperationTimedOut](EVENT-CATALOG.md#event-601)
-and [602 — ServiceUnavailable](EVENT-CATALOG.md#event-602) for the complete contracts.
+See the catalog entries for [502 — AuthenticationFailed](EVENT-CATALOG.md#event-502),
+[503 — AuthorizationFailed](EVENT-CATALOG.md#event-503),
+[601 — OperationTimedOut](EVENT-CATALOG.md#event-601), and
+[602 — ServiceUnavailable](EVENT-CATALOG.md#event-602) for the complete contracts.
 
 ## Shared sample simulation
 
