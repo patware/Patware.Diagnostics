@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Let a main-branch run finish its deployment. Superseded PR and
+  # feature-branch runs can still be cancelled.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:
@@ -64,3 +66,44 @@ jobs:
           path: ${{ steps.build.outputs.packages }}
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload documentation for GitHub Pages
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           github.event_name == 'workflow_dispatch')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+          retention-days: 7
+
+  documentation:
+    name: Publish documentation
+    needs: packages
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' ||
+       github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy documentation
+        id: deployment
+        uses: actions/deploy-pages@v4

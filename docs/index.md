@@ -6,6 +6,11 @@ Welcome to the documentation for **Patware.Diagnostics**, a collection of .NET l
 
 Whether you're integrating diagnostics into an application, exploring the event catalog, or contributing to the libraries, this is your starting point.
 
+> [!NOTE]
+> This site follows the latest validated `main` branch and may describe
+> features that are not yet available in a published package.
+> Consult the changelog and GitHub releases for released functionality.
+
 ## Explore the documentation
 
 ### [Getting Started](development/GETTING-STARTED.md)

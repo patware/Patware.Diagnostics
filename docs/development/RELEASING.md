@@ -355,6 +355,29 @@ Retain the candidate manifest and artifacts for troubleshooting.
 The workflow's NuGet availability check covers packages, not successful
 symbol indexing.
 
+## Documentation publication
+
+The CI workflow publishes the DocFX site to GitHub Pages after successful
+build, test, package, and consumer validation on `main`.
+
+The deployment uses `docs/_site` from that same workflow run. Generated HTML
+is uploaded as a Pages artifact and is not committed to the repository.
+
+Pull requests validate documentation without publishing it. A manual CI run
+on `main` can also rebuild and deploy the site.
+
+Documentation follows current development on `main`; it is not restricted
+to published package releases. Publishing documentation does not publish
+NuGet packages.
+
+If deployment fails after validation succeeds, inspect the failure and rerun
+the Publish documentation job while its Pages artifact remains available.
+The artifact is retained for seven days. If it has expired, run CI again
+from the intended `main` commit.
+
+Repository setup requires Settings → Pages → GitHub Actions and a
+github-pages environment permitting deployment from `main`.
+
 ## Publication failures
 
 ### Preparation failed
