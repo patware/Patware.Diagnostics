@@ -3,6 +3,48 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.7 - 2026-10-23
+
+### Added
+
+- External dependency rejection events through `logger.External`:
+  - 502, `External_AuthenticationFailed`.
+  - 503, `External_AuthorizationFailed`.
+- Structured dependency, operation, attempt, and reason-code properties,
+  with nullable exceptions for rejection results returned without throwing.
+- Authentication-rejection and authorization-denial simulations in the
+  Blazor, Worker Service, and WPF samples.
+- Contract tests covering event identities, Warning severity, structured
+  properties, exception preservation, filtering, and event-group guards.
+- Operational guidance distinguishing authentication, authorization,
+  timeout, and availability failures.
+- Published DocFX documentation through GitHub Pages, updated automatically
+  after successful validation of `main`.
+- Dedicated Events navigation with an event index, category summaries,
+  individual event pages, and links to the C# API reference.
+- Generator regression checks covering documentation links, cross-category
+  relationships, stale pages, and protection of authored files.
+
+### Changed
+
+- Replaced the shared sample result's availability flag with explicit
+  outcome status, preserving successful empty responses as distinct
+  from dependency failures.
+- Reorganized event documentation into category and event pages, with
+  related transitions and Mermaid lifecycle diagrams.
+- Extended documentation generation and verification to manage multiple
+  pages and detect stale generated output.
+- Preserved existing event-catalog anchors through a compatibility page.
+
+### Fixed
+
+- Separated release finalization from NuGet publication so availability
+  delays can be retried without uploading packages again.
+- Added verification of existing GitHub release assets and tag identity
+  before finalization.
+- Corrected Markdown escaping so lifecycle arrows and special characters
+  display correctly in generated documentation.
+
 ## 0.0.6 - 2026-10-22
 
 ### Added

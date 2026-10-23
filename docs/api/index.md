@@ -11,4 +11,4 @@ documentation comments.
   configuration for event-aware console output.
 
 For event identities, expected sequences, and operational guidance,
-see the [application event catalog](../architecture/EVENT-CATALOG.md).
+see the [Events section](../events/index.md).

@@ -252,6 +252,109 @@
       "Status": "Stable",
       "Since": "0.0.3"
     },
+    "502": {
+      "EventId": 502,
+      "EventName": "External_AuthenticationFailed",
+      "Category": "External",
+      "Method": "AuthenticationFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "External authentication failed. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Reason: {ReasonCode}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The stable logical dependency name, without credentials or request-specific data."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The stable logical name of the operation whose authentication was rejected."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this individual operation attempt. Use a different identifier for each retry."
+        },
+        {
+          "Name": "reasonCode",
+          "ValueType": "string",
+          "Summary": "A stable application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "Exception?",
+          "Summary": "The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged."
+        }
+      ],
+      "Summary": "Reports that an external dependency rejected authentication for an operation attempt.",
+      "Trigger": "Emit when the dependency result establishes an authentication rejection.",
+      "Remarks": [
+        "This event reports the observed rejection. It does not establish that a password is incorrect or identify the underlying credential or policy problem.",
+        "An authentication operation that exceeds its deadline belongs to External_OperationTimedOut. An authentication dependency that reports unavailability belongs to External_ServiceUnavailable.",
+        "Authorization denial has a separate meaning and belongs to External_AuthorizationFailed.",
+        "Use a small documented set of ReasonCode values suitable for grouping. Do not include credentials, tokens, authorization headers, connection strings, or raw authentication responses.",
+        "Exceptions may contain sensitive messages or nested details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception for a normal rejection result.",
+        "The exception travels through the logging exception channel and is not a message-template property.",
+        "Report once at the boundary responsible for the dependency attempt. Avoid reporting the same rejection again at each calling layer.",
+        "The event does not change application mode, refresh credentials, retry the operation, or initiate shutdown. Emit application mode events separately when functionality changes.",
+        "User cancellation and application shutdown are not authentication rejections."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.7"
+    },
+    "503": {
+      "EventId": 503,
+      "EventName": "External_AuthorizationFailed",
+      "Category": "External",
+      "Method": "AuthorizationFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "External authorization failed. Dependency: {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}. Reason: {ReasonCode}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The stable logical dependency name, without credentials or request-specific data."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The stable logical name of the operation whose permission was denied."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this individual operation attempt. Use a different identifier for each retry."
+        },
+        {
+          "Name": "reasonCode",
+          "ValueType": "string",
+          "Summary": "A stable application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "Exception?",
+          "Summary": "The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged."
+        }
+      ],
+      "Summary": "Reports that an external dependency denied permission to perform an operation attempt.",
+      "Trigger": "Emit when the dependency result establishes an authorization denial.",
+      "Remarks": [
+        "This event reports the observed permission denial. It does not independently establish that authentication succeeded or identify the policy responsible.",
+        "Authentication rejection has a separate meaning and belongs to External_AuthenticationFailed.",
+        "Timeouts and dependency unavailability belong to their respective external failure events. Do not classify every unsuccessful result as authorization failure.",
+        "Use a small documented set of ReasonCode values suitable for grouping. Do not include tokens, authorization headers, personal identities, protected resource details, or raw response bodies.",
+        "Exceptions may contain sensitive messages or nested details. Pass the original exception only when appropriate for the logging destination; otherwise pass null. Do not manufacture an exception for a normal denial result.",
+        "The exception travels through the logging exception channel and is not a message-template property.",
+        "Report once at the boundary responsible for the dependency attempt. Avoid reporting the same denial again at each calling layer.",
+        "The event does not grant permission, choose a fallback, change application mode, retry the operation, or initiate shutdown.",
+        "Cached fallback must respect the application's authorization and data-access policy. A dependency denial does not itself authorize access to cached data.",
+        "User cancellation and application shutdown are not authorization denials."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.7"
+    },
     "506": {
       "EventId": 506,
       "EventName": "Configuration_ValueIsInvalid",

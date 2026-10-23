@@ -5,12 +5,13 @@
 Validates and generates application event APIs and documentation.
 
 .DESCRIPTION
-Validates the catalog before rendering either output.
+Validates the catalog before rendering the API and documentation outputs.
 Rendering completes in memory before files are written.
-Only the two explicitly owned output files are updated.
+Only explicitly owned output files are updated. Stale generated event and
+category pages are removed only from the dedicated documentation directory.
 
 .PARAMETER Verify
-Checks whether generated files match the catalog and templates.
+Checks for missing, outdated, or stale generated files.
 Does not create or modify files.
 
 .PARAMETER ValidateOnly
@@ -235,11 +236,12 @@ function ConvertTo-MarkdownText {
 
   $singleLine = [regex]::Replace($Value, '\s+', ' ').Trim()
 
-  # Escape Markdown punctuation before HTML encoding so the escaping
-  # cannot corrupt numeric character references such as &#39;.
+  # Escape Markdown punctuation before HTML encoding, but leave angle
+  # brackets to HtmlEncode. Escaping '>' first produces '\&gt;', which
+  # Markdown renders as a visible entity rather than an arrow.
   $escaped = [regex]::Replace(
     $singleLine,
-    '([\\`*_{}\[\]()#+.!|>-])',
+    '([\\`*_{}\[\]()#+.!|-])',
     '\$1'
   )
 
@@ -279,6 +281,40 @@ function Normalize-GeneratedText {
   return $Value.Replace("`r`n", "`n").Replace("`r", "`n").TrimEnd() + "`n"
 }
 
+function Get-EventApiUid {
+  param($Event)
+
+  $types = @{
+    string = 'System.String'
+    double = 'System.Double'
+    Exception = 'System.Exception'
+    'Exception?' = 'System.Exception'
+  }
+  $parameters = @($Event.Arguments | ForEach-Object { $types[$_.ValueType] })
+  $uid = 'Patware.Diagnostics.ApplicationEvents.{0}Events.{1}' -f (
+    $Event.Category, $Event.Method
+  )
+  # DocFX omits parentheses from parameterless method UIDs.
+  if ($parameters.Count -gt 0) {
+    $uid += '(' + ($parameters -join ',') + ')'
+  }
+  return [Uri]::EscapeDataString($uid)
+}
+
+function New-DocumentationReference {
+  param([string]$EventId)
+
+  $event = $catalog.Ids[$EventId]
+  @{
+    EventId = $EventId
+    EventName = $event.EventName
+    Text = ConvertTo-MarkdownText "$EventId — $($event.EventName)"
+    FileName = "Event_$EventId.md"
+    HasPublicApi = $event.Status -ne 'Retired'
+    ApiUid = Get-EventApiUid $event
+  }
+}
+
 function New-EventRelationship {
   param(
     [string]$TargetId,
@@ -296,6 +332,8 @@ function New-EventRelationship {
     LabelXml       = ConvertTo-XmlText $label
     LabelMd        = ConvertTo-MarkdownText $label
     Anchor         = "event-$TargetId"
+    FileName       = "Event_$TargetId.md"
+    ApiUid         = Get-EventApiUid $target
     HasPublicApi   = $target.Status -ne 'Retired'
     CrefXml        = ConvertTo-XmlText (
       'Patware.Diagnostics.ApplicationEvents.{0}Events.{1}' -f (
@@ -461,6 +499,14 @@ $documentationEvents = @(
       EventId      = $eve.EventId
       EventName    = $eve.EventName
       Category     = $eve.Category
+      Method       = $eve.Method
+      FileName     = "Event_$($eve.EventId).md"
+      CategoryFile = "Category_$($eve.Category).md"
+      ApiUid       = Get-EventApiUid $eve
+      CategoryApiUid = "Patware.Diagnostics.ApplicationEvents.$($eve.Category)Events"
+      HasCategoryApi = @($orderedEvents | Where-Object {
+          $_.Category -ceq $eve.Category -and $_.Status -ne 'Retired'
+        }).Count -gt 0
       EventClass   = $eve.EventClass
       LogLevel     = $eve.LogLevel
       Status       = $eve.Status
@@ -505,11 +551,12 @@ $documentationEvents = @(
 $pairModels = @(
   foreach ($pair in ($catalog.Related.Ing_Ed | Sort-Object { [int]$_.Ing })) {
     @{
-      Starting  = "$($pair.Ing) — $($catalog.Ids[$pair.Ing].EventName)"
-      Completed = "$($pair.Ed) — $($catalog.Ids[$pair.Ed].EventName)"
+      EventIds  = @($pair.Ing, $pair.Ed) + @($pair.Fails)
+      Starting  = New-DocumentationReference $pair.Ing
+      Completed = New-DocumentationReference $pair.Ed
       Failures  = @(
         foreach ($failureId in ($pair.Fails | Sort-Object { [int]$_ })) {
-          @{ Text = "$failureId — $($catalog.Ids[$failureId].EventName)" }
+          New-DocumentationReference $failureId
         }
       )
     }
@@ -522,12 +569,11 @@ $lifecycleModels = @(
 
     @{
       Name = ConvertTo-MarkdownText $lifecycle.Name
+      EventIds = $states
 
       States = @(
         foreach ($stateId in $states) {
-          @{
-            Text = "$stateId — $($catalog.Ids[$stateId].EventName)"
-          }
+          New-DocumentationReference $stateId
         }
       )
 
@@ -554,12 +600,67 @@ $lifecycleModels = @(
   }
 )
 
+function New-EventTable {
+  param([array]$Events)
+
+  $rows = @(
+    '| EventId | Category | Method | EventClass | LogLevel |'
+    '| --- | --- | --- | --- | --- |'
+    foreach ($event in $Events) {
+      $category = "[$($event.Category)]($($event.CategoryFile))"
+      if ($event.HasCategoryApi) {
+        $category += " · [API](xref:$($event.CategoryApiUid))"
+      }
+      $method = if ($event.HasPublicApi) {
+        "[$($event.Method)](xref:$($event.ApiUid))"
+      } else {
+        "$($event.Method) (retired)"
+      }
+      '| [{0}]({1}) | {2} | {3} | {4} | {5} |' -f (
+        $event.EventId, $event.FileName, $category, $method,
+        $event.EventClass, $event.LogLevel
+      )
+    }
+  )
+  return $rows -join "`n"
+}
+
+# Documentation includes empty categories and categories containing only
+# retired events, even though no corresponding API type is generated.
+$documentationCategories = @(
+  foreach ($categoryName in $categoryNames) {
+    $events = @($documentationEvents | Where-Object { $_.Category -ceq $categoryName })
+    $categoryEventIds = @($events | ForEach-Object { [string]$_.EventId })
+    $pairs = @($pairModels | Where-Object {
+        @($_.EventIds | Where-Object { $_ -in $categoryEventIds }).Count -gt 0
+      })
+    $lifecycles = @($lifecycleModels | Where-Object {
+        @($_.EventIds | Where-Object { $_ -in $categoryEventIds }).Count -gt 0
+      })
+    @{
+      Name = $categoryName
+      Summary = ConvertTo-MarkdownText $catalog.Categories[$categoryName].Summary
+      FileName = "Category_$categoryName.md"
+      ApiUid = "Patware.Diagnostics.ApplicationEvents.${categoryName}Events"
+      HasPublicApi = @($events | Where-Object HasPublicApi).Count -gt 0
+      Events = $events
+      HasEvents = $events.Count -gt 0
+      EventTable = New-EventTable $events
+      Pairs = $pairs
+      Lifecycles = $lifecycles
+      HasRelationships = $pairs.Count -gt 0 -or $lifecycles.Count -gt 0
+    }
+  }
+)
+
 $model = @{
   Namespace  = 'Patware.Diagnostics.ApplicationEvents'
   Categories = $categoryModels
   Events     = $documentationEvents
   Pairs      = $pairModels
   Lifecycles = $lifecycleModels
+  DocumentationCategories = $documentationCategories
+  EventTable = New-EventTable $documentationEvents
 }
 
 $repositoryRoot = [System.IO.Path]::GetFullPath(
@@ -571,11 +672,41 @@ $outputDefinitions = @(
     Template     = 'LoggingExtensions.cs.mustache'
     RelativePath = 'src/ApplicationEvents/ApplicationEvents.Core/Generated/EventLoggingExtensions.g.cs'
     Marker       = '// <auto-generated />'
+    Model        = $model
   },
   @{
-    Template     = 'Catalog.md.mustache'
+    Template     = 'CatalogCompatibility.md.mustache'
     RelativePath = 'docs/architecture/EVENT-CATALOG.md'
     Marker       = '<!-- Generated by Generate-Events.ps1. Do not edit. -->'
+    Model        = $model
+  },
+  @{
+    Template     = 'EventsIndex.md.mustache'
+    RelativePath = 'docs/events/index.md'
+    Marker       = '<!-- Generated by Generate-Events.ps1. Do not edit. -->'
+    Model        = $model
+  },
+  @{
+    Template     = 'EventsToc.yml.mustache'
+    RelativePath = 'docs/events/toc.yml'
+    Marker       = '# Generated by Generate-Events.ps1. Do not edit.'
+    Model        = $model
+  }
+  foreach ($event in $documentationEvents) {
+    @{
+      Template = 'Event.md.mustache'
+      RelativePath = "docs/events/$($event.FileName)"
+      Marker = '<!-- Generated by Generate-Events.ps1. Do not edit. -->'
+      Model = $event
+    }
+  }
+  foreach ($category in $documentationCategories) {
+    @{
+      Template = 'Category.md.mustache'
+      RelativePath = "docs/events/$($category.FileName)"
+      Marker = '<!-- Generated by Generate-Events.ps1. Do not edit. -->'
+      Model = $category
+    }
   }
 )
 
@@ -589,8 +720,13 @@ $renderedOutputs = @(
       throw "Template is empty: $templatePath"
     }
 
+    # PowerShell pipelines can wrap nested dictionaries in PSObject instances.
+    # Stubble does not unwrap those when iterating filtered relationship/event
+    # lists. Normalize the data-only model before handing it to the renderer.
+    $renderModel = $definition.Model | ConvertTo-Json -Depth 100 |
+      ConvertFrom-Json -AsHashtable
     $content = Normalize-GeneratedText (
-      $renderer.Render($templateText, $model)
+      $renderer.Render($templateText, $renderModel)
     )
 
     if (-not $content.StartsWith($definition.Marker, [StringComparison]::Ordinal)) {
@@ -605,9 +741,51 @@ $renderedOutputs = @(
   }
 )
 
+$eventsDirectory = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs/events'))
+if ((Test-Path -LiteralPath $eventsDirectory) -and
+    ((Get-Item -LiteralPath $eventsDirectory).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+  throw "Refusing to manage a linked documentation directory: $eventsDirectory"
+}
+
+$expectedPaths = [System.Collections.Generic.HashSet[string]]::new(
+  [StringComparer]::OrdinalIgnoreCase
+)
+foreach ($output in $renderedOutputs) {
+  if (-not $expectedPaths.Add([IO.Path]::GetFullPath($output.Path))) {
+    throw "Generated output paths collide: $($output.Path)"
+  }
+}
+
+# Only direct event/category pages bearing our ownership marker are eligible
+# for removal. Authored files and subdirectories are never removed.
+$staleOutputs = @(
+  if (Test-Path -LiteralPath $eventsDirectory) {
+    foreach ($file in (Get-ChildItem -LiteralPath $eventsDirectory -File)) {
+      if ($file.Name -cnotmatch '^(Event_[1-9][0-9]*|Category_[A-Z][A-Za-z0-9_]*)\.md$' -or
+          $expectedPaths.Contains($file.FullName)) {
+        continue
+      }
+      if ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        throw "Refusing to inspect a linked output file: $($file.FullName)"
+      }
+      if ([IO.File]::ReadAllText($file.FullName).StartsWith(
+          '<!-- Generated by Generate-Events.ps1. Do not edit. -->', [StringComparison]::Ordinal)) {
+        # Confirm the absolute deletion target is directly in the owned folder.
+        if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($file.FullName)) -cne $eventsDirectory) {
+          throw "Stale output is outside the documentation directory: $($file.FullName)"
+        }
+        $file
+      }
+    }
+  }
+)
+
 $changedOutputs = @(
   foreach ($output in $renderedOutputs) {
     if (Test-Path -LiteralPath $output.Path) {
+      if ((Get-Item -LiteralPath $output.Path).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        throw "Refusing to replace a linked output file: $($output.Path)"
+      }
       $existingText = [System.IO.File]::ReadAllText($output.Path)
 
       if (-not $existingText.StartsWith($output.Marker, [StringComparison]::Ordinal)) {
@@ -624,9 +802,10 @@ $changedOutputs = @(
 )
 
 if ($Verify) {
-  if ($changedOutputs.Count -gt 0) {
-    $paths = $changedOutputs.Path -join "`n - "
-    throw "Generated files are missing or outdated:`n - $paths"
+  if ($changedOutputs.Count -gt 0 -or $staleOutputs.Count -gt 0) {
+    $paths = @($changedOutputs | ForEach-Object Path) -join "`n - "
+    $stalePaths = @($staleOutputs | ForEach-Object FullName) -join "`n - "
+    throw "Generated files are missing or outdated:`n - $paths`nStale generated pages:`n - $stalePaths"
   }
 
   Write-Host 'Generated files are current.'
@@ -646,6 +825,11 @@ foreach ($output in $changedOutputs) {
   Write-Host "Generated $($output.Path)"
 }
 
-if ($changedOutputs.Count -eq 0) {
+foreach ($file in $staleOutputs) {
+  Remove-Item -LiteralPath $file.FullName
+  Write-Host "Removed stale generated page $($file.FullName)"
+}
+
+if ($changedOutputs.Count -eq 0 -and $staleOutputs.Count -eq 0) {
   Write-Host 'Generated files are already current.'
 }

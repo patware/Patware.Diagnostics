@@ -80,7 +80,8 @@ distinction between implemented behavior and planned work.
 
 ## Documentation
 
-- [Documentation home](docs/index.md)
+- [Published documentation](https://patware.github.io/Patware.Diagnostics/)
+- [Documentation source](docs/index.md)
 - [Definitions](docs/architecture/DIAGNOSTICS-DEFINITIONS.md)
 - [Architecture](docs/architecture/ARCHITECTURE.md)
 - [Testing](tests/README.md)

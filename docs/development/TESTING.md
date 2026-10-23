@@ -10,6 +10,34 @@ Tests must protect the semantic contract as strongly as the implementation. A re
 
 Verify uniqueness and stability of event IDs and names, valid range/category assignments, required metadata, message-template/property consistency, and deprecation rules.
 
+Run catalog validation and generated-file verification from the repository root:
+
+```powershell
+./catalog/ApplicationEvents/Generate-Events.ps1 -ValidateOnly
+./catalog/ApplicationEvents/Generate-Events.ps1 -Verify
+```
+
+When changing the generator or templates, also run:
+
+```powershell
+./catalog/ApplicationEvents/Test-Generate-Events.ps1
+```
+
+The regression script creates an isolated fixture repository under ignored
+`artifacts/generator-tests`. It checks event/API links, complete cross-category
+relationships, empty and retired-only categories, and preservation of the
+generated C# API. It also verifies that `-Verify` detects missing, outdated,
+and stale pages without changing them, that generation removes only stale
+marked pages, and that authored files are protected. Fixtures are retained
+for inspection; the real catalog and generated outputs are not changed.
+
+Validate the rendered links against freshly generated API metadata:
+
+```powershell
+docfx metadata docs/docfx.json
+docfx build docs/docfx.json --warningsAsErrors
+```
+
 ### Unit tests
 
 Test event emitters, options validation, filtering decisions, state transitions, and failure-isolation behavior independently of full hosts where possible.

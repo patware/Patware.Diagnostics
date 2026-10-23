@@ -1,43 +1,57 @@
 namespace SampleApplications.Shared;
 
 /// <summary>
-/// Represents either a successful product response or service unavailability.
+/// Represents a completed simulated product-service response.
 /// </summary>
 /// <remarks>
-/// A successful response can contain no products. IsAvailable distinguishes
-/// that outcome from an unavailable service.
-/// Successful results own a read-only snapshot of the supplied products,
-/// preventing subsequent collection changes from altering cached results.
+/// Explicit status distinguishes successful empty responses from failures.
+/// Successful results own a read-only snapshot of the returned products.
+/// This type contains no logging, caching, or application-mode policy.
 /// </remarks>
 public sealed class ProductServiceResult
 {
-    private ProductServiceResult(bool isAvailable, IReadOnlyList<ProductPrice> products)
+    private ProductServiceResult(ProductServiceStatus status, IReadOnlyList<ProductPrice> products)
     {
-        IsAvailable = isAvailable;
+        Status = status;
         Products = products;
     }
 
     /// <summary>
-    /// Gets whether the service successfully fulfilled the request.
+    /// Gets the outcome reported by the simulated dependency.
     /// </summary>
-    public bool IsAvailable { get; }
+    public ProductServiceStatus Status { get; }
 
     /// <summary>
-    /// Gets the returned products, or an empty collection when unavailable.
+    /// Gets whether the request completed successfully.
+    /// </summary>
+    public bool IsSuccess => Status == ProductServiceStatus.Success;
+
+    /// <summary>
+    /// Gets the returned products, or an empty collection for a failed result.
     /// </summary>
     /// <remarks>
-    /// Check IsAvailable before interpreting an empty collection as a
+    /// Check IsSuccess before interpreting an empty collection as a
     /// successful response with no products.
     /// </remarks>
     public IReadOnlyList<ProductPrice> Products { get; }
 
     /// <summary>
-    /// Gets the immutable unavailable result.
+    /// Gets the immutable unavailable response.
     /// </summary>
-    public static ProductServiceResult Unavailable { get; } = new(false, Array.Empty<ProductPrice>());
+    public static ProductServiceResult Unavailable { get; } = new(ProductServiceStatus.Unavailable, []);
 
     /// <summary>
-    /// Creates a successful result containing a snapshot of the products.
+    /// Gets the immutable authentication-rejection response.
+    /// </summary>
+    public static ProductServiceResult AuthenticationRejected { get; } = new(ProductServiceStatus.AuthenticationRejected, []);
+
+    /// <summary>
+    /// Gets the immutable authorization-denial response.
+    /// </summary>
+    public static ProductServiceResult AuthorizationDenied { get; } = new(ProductServiceStatus.AuthorizationDenied, []);
+
+    /// <summary>
+    /// Creates a successful response containing a snapshot of the products.
     /// </summary>
     /// <param name="products">The products returned by the service.</param>
     /// <returns>A successful, immutable response.</returns>
@@ -48,6 +62,6 @@ public sealed class ProductServiceResult
     {
         ArgumentNullException.ThrowIfNull(products);
 
-        return new ProductServiceResult(true, Array.AsReadOnly(products.ToArray()));
+        return new ProductServiceResult(ProductServiceStatus.Success, Array.AsReadOnly(products.ToArray()));
     }
 }

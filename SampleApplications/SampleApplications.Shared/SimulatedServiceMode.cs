@@ -22,5 +22,15 @@ public enum SimulatedServiceMode
     /// <summary>
     /// Immediately returns an explicit unavailable result.
     /// </summary>
-    Unavailable
+    Unavailable,
+
+    /// <summary>
+    /// Immediately returns rejection of the simulated application's authentication.
+    /// </summary>
+    AuthenticationRejected,
+
+    /// <summary>
+    /// Immediately returns denial of the simulated application's operation.
+    /// </summary>
+    AuthorizationDenied
 }

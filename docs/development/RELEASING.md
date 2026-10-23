@@ -86,6 +86,14 @@ Commit both the source changes and the generated outputs:
 
 - `src/ApplicationEvents/ApplicationEvents.Core/Generated/EventLoggingExtensions.g.cs`
 - `docs/architecture/EVENT-CATALOG.md`
+- `docs/events/index.md`, `docs/events/toc.yml`, and the generated
+  `Event_{EventId}.md` and `Category_{CategoryName}.md` pages.
+
+The old catalog is a compatibility page preserving existing event anchors.
+The Events section contains the current index, category diagrams, event details,
+and API cross-references. Do not edit generated pages directly. Generation removes
+stale marked event/category pages; `-Verify` reports missing, outdated, and stale
+outputs without writing files. Authored files in that directory are preserved.
 
 Published event IDs and their meanings must remain compatible.
 Review event-contract changes before assigning or repurposing an ID.
@@ -347,6 +355,29 @@ Retain the candidate manifest and artifacts for troubleshooting.
 The workflow's NuGet availability check covers packages, not successful
 symbol indexing.
 
+## Documentation publication
+
+The CI workflow publishes the DocFX site to GitHub Pages after successful
+build, test, package, and consumer validation on `main`.
+
+The deployment uses `docs/_site` from that same workflow run. Generated HTML
+is uploaded as a Pages artifact and is not committed to the repository.
+
+Pull requests validate documentation without publishing it. A manual CI run
+on `main` can also rebuild and deploy the site.
+
+Documentation follows current development on `main`; it is not restricted
+to published package releases. Publishing documentation does not publish
+NuGet packages.
+
+If deployment fails after validation succeeds, inspect the failure and rerun
+the Publish documentation job while its Pages artifact remains available.
+The artifact is retained for seven days. If it has expired, run CI again
+from the intended `main` commit.
+
+Repository setup requires Settings → Pages → GitHub Actions and a
+github-pages environment permitting deployment from `main`.
+
 ## Publication failures
 
 ### Preparation failed
@@ -403,7 +434,7 @@ publishing that draft. Do not push the packages again.
 | `PackageDirectory` is an array rather than a string | Route native-command output in `Build.ps1` through `Out-Host`; return only the package directory. |
 | WPF build fails on Linux | Confirm `EnableWindowsTargeting` remains enabled and inspect the underlying SDK error. |
 | DocFX command is unavailable | Install the version used by the workflows. |
-| Generated event files are outdated | Regenerate, review, and commit both generated outputs. |
+| Generated event files are outdated | Regenerate, review, and commit all generated outputs, including page additions and deletions. |
 | Tag, release, or package already exists | Inspect previous publication state before attempting recovery. |
 | Finalization timed out after successful uploads | Inspect NuGet availability, then rerun only Finalize published candidate in the original run. |
 | Finalization reports an asset or tag mismatch | Investigate the existing release against the original candidate; do not bypass verification. |
