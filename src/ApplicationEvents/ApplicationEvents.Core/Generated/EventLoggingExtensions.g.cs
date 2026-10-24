@@ -65,6 +65,26 @@ public static class LoggerEventCategories
         }
 
         /// <summary>
+        /// Gets the Dependency event group.
+        /// </summary>
+        /// <remarks>
+        /// The returned value retains the original logger.
+        /// Accessing this property neither emits an event nor changes
+        /// the logger's category, configuration, or providers.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// The logger is null.
+        /// </exception>
+        public DependencyEvents Dependency
+        {
+            get
+            {
+                ArgumentNullException.ThrowIfNull(logger);
+                return new DependencyEvents(logger);
+            }
+        }
+
+        /// <summary>
         /// Gets the External event group.
         /// </summary>
         /// <remarks>
@@ -689,6 +709,90 @@ internal static partial class ConfigurationEventMessages
         Message = "Configuration {ConfigurationName} failed validation. Reason: {Reason}. Validation: {ValidationId}.")]
     internal static partial void ValidationFailed(
         ILogger logger, string ConfigurationName, string ValidationId, string Reason);
+
+}
+
+/// <summary>
+/// Reports failures to locate, load, or construct application components. Resolution outcomes do not automatically determine application mode.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Obtain this group through the logger's Dependency property.
+/// </para>
+/// <para>
+/// This value type groups related events without allocating a separate
+/// category object on the managed heap for each property access.
+/// </para>
+/// <para>
+/// These methods emit events when explicitly called. They do not
+/// observe or perform lifecycle transitions automatically.
+/// </para>
+/// </remarks>
+public readonly struct DependencyEvents
+{
+    private readonly ILogger? _logger;
+
+    internal DependencyEvents(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    private ILogger Logger =>
+        _logger ?? throw new InvalidOperationException(
+            "Obtain this event group through a logger's Dependency property.");
+
+    /// <summary>
+    /// Reports that an attempt to locate, load, or construct a requested application component failed.
+    /// </summary>
+    /// <param name="dependencyName">The non-sensitive logical name of the component being resolved.</param>
+    /// <param name="operationName">The non-sensitive logical operation requiring the component.</param>
+    /// <param name="resolutionId">The unique identifier of this resolution attempt. Use a new identifier for each retry.</param>
+    /// <param name="reasonCode">A stable application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed.</param>
+    /// <param name="exception">The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged.</param>
+    /// <remarks>
+    /// <para>Emit when an attempted component resolution cannot supply the requested component.</para>
+    /// <para>A dependency is an application component, such as a plugin, implementation, or locally loaded provider. This event is not limited to a dependency injection container.</para>
+    /// <para>The absence of an optional component is not automatically a failure. Emit when an actual attempt to resolve the requested component fails.</para>
+    /// <para>Configuration source loading and parsing failures belong to Configuration_LoadFailed. An operation encountering an unavailable external service belongs to External_ServiceUnavailable.</para>
+    /// <para>A successful resolution followed by a failure while using the component is not a resolution failure.</para>
+    /// <para>Report once at the boundary responsible for the attempt. Do not report the same failure again at each calling layer.</para>
+    /// <para>Use a small documented set of ReasonCode values. Do not include credentials, configuration contents, sensitive paths, or raw exception messages in structured arguments.</para>
+    /// <para>Pass the original exception only when appropriate for the logging destination. Do not manufacture an exception solely for logging.</para>
+    /// <para>The exception travels through the logging exception channel and is not a message-template property.</para>
+    /// <para>Cancellation and application shutdown are not dependency resolution failures.</para>
+    /// <para>The application may select a fallback, disable a feature, or stop. A resolution failure does not automatically establish degraded application mode.</para>
+    /// <para>A later successful resolution does not by itself establish recovery to normal application mode.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not resolve components, retry, select a fallback, change application mode, or initiate shutdown.</para>
+    /// <para>Status: Stable. Introduced: 0.0.9.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ResolutionFailed(string @dependencyName, string @operationName, string @resolutionId, string @reasonCode, Exception? @exception)
+    {
+        DependencyEventMessages.ResolutionFailed(Logger, @dependencyName, @operationName, @resolutionId, @reasonCode, @exception);
+    }
+
+}
+
+/// <summary>
+/// Implements Dependency event emission using generated logging methods.
+/// </summary>
+/// <remarks>
+/// Keeping these methods internal prevents implementation details from
+/// appearing in the public logger API. Microsoft supplies their bodies
+/// through logging source generation.
+/// </remarks>
+internal static partial class DependencyEventMessages
+{
+    [LoggerMessage(
+        EventId = 504,
+        EventName = "Dependency_ResolutionFailed",
+        Level = LogLevel.Warning,
+        Message = "Dependency resolution failed. Dependency: {DependencyName}. Operation: {OperationName}. Resolution: {ResolutionId}. Reason: {ReasonCode}.")]
+    internal static partial void ResolutionFailed(
+        ILogger logger, string DependencyName, string OperationName, string ResolutionId, string ReasonCode, Exception? Exception);
 
 }
 

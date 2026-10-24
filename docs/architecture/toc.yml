@@ -3,6 +3,8 @@ items:
   href: CONFIGURATION-VALIDATION.md
 - name: External operation events
   href: EXTERNAL-OPERATIONS.md
+- name: Dependency resolution
+  href: DEPENDENCY-RESOLUTION.md
 - name: Architecture
   href: ARCHITECTURE.md
 - name: Vision

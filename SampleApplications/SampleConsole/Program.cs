@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,26 @@ builder.AddApplicationEvents(options =>
     options.LogUnhandledExceptions = true;
 });
 
+// Read once before registration. Changing this option requires restarting
+// the application because the built service provider is not reconfigured.
+bool demonstrateFailureAtStartup =
+    builder.Configuration.GetValue<bool>(
+        "Samples:DependencyResolution:FailAtStartup");
+
+if (demonstrateFailureAtStartup)
+{
+    Console.WriteLine("Simulation: Skipping the registration of the IReportFormatterSample to demonstrate a 504 failure");
+}
+else
+{
+    Console.WriteLine("Registering the IReportFormatterSample service.");
+    Console.WriteLine("If you want to simulate a 504, restart this argument:  --Samples:DependencyResolution:FailAtStartup=true");
+    builder.Services.AddSingleton<
+        SampleConsole.Dependencies.IReportFormatterSample,
+        SampleConsole.Dependencies.ReportFormatterSample>();
+}
+
+
 using IHost host = builder.Build();
 
 ILogger logger = host.Services.GetRequiredService<ILogger<Program>>();
@@ -25,10 +46,39 @@ pollingConfiguration.TryReload();
 
 IHostApplicationLifetime lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
+SampleConsole.Dependencies.IReportFormatterSample reportFormatter;
+
+string resolutionId = Guid.NewGuid().ToString("N");
+
+try
+{
+    reportFormatter = host.Services.GetRequiredService<SampleConsole.Dependencies.IReportFormatterSample>();
+}
+catch (Exception ex) when (ex is not OperationCanceledException)
+{
+    logger.Dependency.ResolutionFailed(
+        dependencyName: nameof(SampleConsole.Dependencies.IReportFormatterSample),
+        operationName: "Program Startup",
+        resolutionId: resolutionId,
+        reasonCode: "ResolutionThrew",
+        exception: null); // exception: if null, call stack not displayed, else yes.
+
+    logger.LogDebug(
+        ex,
+        "Dependency resolution exception details. Resolution: {ResolutionId}.",
+        resolutionId);
+
+    //throw;  // stop with an exception
+
+    Environment.ExitCode = 1;
+    return;
+}
 
 // Complete startup before accepting input so the exception observer
 // is subscribed before the simulated failure can occur.
 await host.StartAsync();
+
+
 
 // This task waits for a shutdown request and executes host shutdown.
 Task shutdown = host.WaitForShutdownAsync();
@@ -46,6 +96,7 @@ Console.WriteLine("Application is running.");
 Console.WriteLine($"Configuration file: {pollingConfiguration.SourcePath}");
 Console.WriteLine($"Active polling interval: {pollingConfiguration.Current.PollingIntervalMilliseconds}ms");
 Console.WriteLine("  R       Reload polling configuration");
+Console.WriteLine("  G       Generate a report - simulate unresolved DI");
 Console.WriteLine("  D       Simulate App in degraded mode");
 Console.WriteLine("  N       Simulate App in back to normal mode");
 Console.WriteLine("  X       Simulate an unhandled exception (terminates the process)");
@@ -83,6 +134,14 @@ while (!shutdown.IsCompleted)
 
         continue;
     }
+
+
+    if (key == ConsoleKey.G)
+    {
+        Console.WriteLine(reportFormatter.GenerateReport());
+        continue;
+    }
+
 
     if (key == ConsoleKey.D)
     {

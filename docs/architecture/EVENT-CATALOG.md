@@ -77,6 +77,12 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_503.md) · [External category](../events/Category_External.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
 
+<a id="event-504"></a>
+
+## 504 — Dependency_ResolutionFailed
+
+[Event documentation](../events/Event_504.md) · [Dependency category](../events/Category_Dependency.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.DependencyEvents.ResolutionFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+
 <a id="event-506"></a>
 
 ## 506 — Configuration_ValueIsInvalid
