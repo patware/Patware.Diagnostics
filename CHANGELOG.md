@@ -3,6 +3,21 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.9 - 2026-10-24
+
+### Added
+
+- Event 504, `Dependency_ResolutionFailed`, through
+  `logger.Dependency.ResolutionFailed()`.
+  - Reports the component, requesting operation, resolution-attempt
+    identifier, and reason code, with an optional exception.
+- Contract tests for dependency resolution failure events.
+- SampleConsole demonstrations of dependency resolution failures:
+  startup termination for an unavailable required component and report
+  generation with an explicit fallback.
+- Dependency resolution guidance covering explicit DI failure observation,
+  startup termination, fallback, and correlated exception diagnostics.
+
 ## 0.0.8 - 2026-10-23
 
 ### Added

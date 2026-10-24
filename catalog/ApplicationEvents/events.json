@@ -17,6 +17,16 @@
     "External": {
       "Name": "External",
       "Summary": "Reports operations involving external dependencies. Operation outcomes do not automatically determine the application's operating mode."
+    },
+    "Dependency": {
+      "Name": "Dependency",
+      "Summary": "Reports failures to locate, load, or construct application components. Resolution outcomes do not automatically determine application mode.",
+      "Guides": [
+        {
+          "Title": "Dependency resolution",
+          "Path": "architecture/DEPENDENCY-RESOLUTION.md"
+        }
+      ]
     }
   },
   "Ids": {
@@ -414,6 +424,60 @@
       ],
       "Status": "Stable",
       "Since": "0.0.7"
+    },
+    "504": {
+      "EventId": 504,
+      "EventName": "Dependency_ResolutionFailed",
+      "Category": "Dependency",
+      "Method": "ResolutionFailed",
+      "EventClass": "UnrecoverableWarning",
+      "LogLevel": "Warning",
+      "Message": "Dependency resolution failed. Dependency: {DependencyName}. Operation: {OperationName}. Resolution: {ResolutionId}. Reason: {ReasonCode}.",
+      "Arguments": [
+        {
+          "Name": "dependencyName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the component being resolved."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical operation requiring the component."
+        },
+        {
+          "Name": "resolutionId",
+          "ValueType": "string",
+          "Summary": "The unique identifier of this resolution attempt. Use a new identifier for each retry."
+        },
+        {
+          "Name": "reasonCode",
+          "ValueType": "string",
+          "Summary": "A stable application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed."
+        },
+        {
+          "Name": "exception",
+          "ValueType": "Exception?",
+          "Summary": "The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged."
+        }
+      ],
+      "Summary": "Reports that an attempt to locate, load, or construct a requested application component failed.",
+      "Trigger": "Emit when an attempted component resolution cannot supply the requested component.",
+      "Remarks": [
+        "A dependency is an application component, such as a plugin, implementation, or locally loaded provider. This event is not limited to a dependency injection container.",
+        "The absence of an optional component is not automatically a failure. Emit when an actual attempt to resolve the requested component fails.",
+        "Configuration source loading and parsing failures belong to Configuration_LoadFailed. An operation encountering an unavailable external service belongs to External_ServiceUnavailable.",
+        "A successful resolution followed by a failure while using the component is not a resolution failure.",
+        "Report once at the boundary responsible for the attempt. Do not report the same failure again at each calling layer.",
+        "Use a small documented set of ReasonCode values. Do not include credentials, configuration contents, sensitive paths, or raw exception messages in structured arguments.",
+        "Pass the original exception only when appropriate for the logging destination. Do not manufacture an exception solely for logging.",
+        "The exception travels through the logging exception channel and is not a message-template property.",
+        "Cancellation and application shutdown are not dependency resolution failures.",
+        "The application may select a fallback, disable a feature, or stop. A resolution failure does not automatically establish degraded application mode.",
+        "A later successful resolution does not by itself establish recovery to normal application mode.",
+        "Calling this method only emits a diagnostic record. It does not resolve components, retry, select a fallback, change application mode, or initiate shutdown."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.9"
     },
     "506": {
       "EventId": 506,

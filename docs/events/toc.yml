@@ -34,6 +34,11 @@ items:
     href: Event_506.md
   - name: 507 — Configuration_ValidationFailed
     href: Event_507.md
+- name: Dependency
+  href: Category_Dependency.md
+  items:
+  - name: 504 — Dependency_ResolutionFailed
+    href: Event_504.md
 - name: External
   href: Category_External.md
   items:
