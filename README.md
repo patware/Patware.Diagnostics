@@ -6,6 +6,8 @@ Less boilerplate. Better diagnostics. More time building features.
 
 Patware.Diagnostics is a collection of .NET libraries that simplify application observability through standardized events, structured logging, metrics, and automatic instrumentation.
 
+> [!NOTE] The compiled docs are hosted in [GitHub pages](https://patware.github.io/Patware.Diagnostics/).
+
 Developers shouldn't have to reinvent logging conventions, memorize event IDs, or write repetitive instrumentation code. And IT operations shouldn't have to decipher inconsistent log messages to understand what an application is doing.
 
 **One registration. Meaningful diagnostics. Minimal effort.**
