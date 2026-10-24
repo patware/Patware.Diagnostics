@@ -40,7 +40,8 @@ application degradation, and recovery.
 
 Learn about the metrics exposed by the libraries, their semantics, and how to integrate them with your monitoring infrastructure.
 
-> [!NOTE] Metrics are planned, not implemented yet.
+> [!NOTE]
+> Metrics are planned, not implemented yet.
 
 ## API Reference
 
