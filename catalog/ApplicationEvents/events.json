@@ -293,6 +293,84 @@
       "Status": "Stable",
       "Since": "0.0.10"
     },
+    "201": {
+      "EventId": 201,
+      "EventName": "External_Connecting",
+      "Category": "External",
+      "Method": "Connecting",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Connecting to external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The stable logical dependency name, without credentials or sensitive addresses."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The stable logical name of the explicit connection operation."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this connection attempt, shared with its outcome. Use a different identifier for each retry."
+        }
+      ],
+      "Summary": "Indicates that an explicit attempt to establish a connection to an external dependency is beginning.",
+      "Trigger": "Emit immediately before invoking an API whose purpose is to establish or acquire a connection.",
+      "Remarks": [
+        "Define connection success according to the API being observed. State whether it represents a transport connection, an authenticated session, or an acquired connection from a pool.",
+        "This event describes connection establishment, not an ordinary business operation performed through an existing connection.",
+        "Do not infer an explicit connection attempt merely because an HTTP request or other dependency operation is beginning.",
+        "Use the same external name, operation name, and operation identifier for the outcome of this attempt.",
+        "A successful connection attempt produces External_Connected. Authentication rejection, authorization denial, timeout, or unavailability may produce their corresponding failure events when established by the connection API.",
+        "The listed failure events are not an exhaustive classification of every possible connection error. Do not relabel an unrelated exception as unavailability.",
+        "Cancellation, process termination, or an unclassified failure can prevent a corresponding catalog outcome. Missing completion does not by itself prove unavailability.",
+        "Calling this method only emits a diagnostic record. It does not establish connections, retry, or change application mode."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.11"
+    },
+    "202": {
+      "EventId": 202,
+      "EventName": "External_Connected",
+      "Category": "External",
+      "Method": "Connected",
+      "EventClass": "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Connected to external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The logical dependency name used by the beginning event."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The logical connection operation name used by the beginning event."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of the successfully completed connection attempt."
+        }
+      ],
+      "Summary": "Indicates that an explicit connection operation completed successfully according to the observed API's contract.",
+      "Trigger": "Emit immediately after the connection API reports successful establishment or acquisition, before performing subsequent business operations.",
+      "Remarks": [
+        "Use the same external name, operation name, and operation identifier as External_Connecting.",
+        "Success is limited to the observed API's contract. A transport connection alone does not establish application authentication or authorization.",
+        "Acquiring an open connection from a pool can satisfy the connection operation. This event does not prove that a new physical connection was created.",
+        "Successful connection establishment does not guarantee subsequent operation success or continued connection availability.",
+        "This event does not establish that the application has recovered from degraded mode.",
+        "Calling this method only emits a diagnostic record. It does not establish connections or change application state."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.11"
+    },
     "204": {
       "EventId": 204,
       "EventName": "Application_InNormalMode",
@@ -835,6 +913,16 @@
         "Ed": "116",
         "Fails": [
           "504"
+        ]
+      },
+      {
+        "Ing": "201",
+        "Ed": "202",
+        "Fails": [
+          "502",
+          "503",
+          "601",
+          "602"
         ]
       }
     ],

@@ -7,6 +7,7 @@ using Patware.Diagnostics.ApplicationEvents;
 using Patware.Diagnostics.ApplicationEvents.Hosting;
 
 using SampleConsole.Configuration;
+using SampleConsole.Connections;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -45,6 +46,37 @@ ReloadablePollingConfiguration pollingConfiguration = new(logger, Path.Combine(A
 pollingConfiguration.TryReload();
 
 IHostApplicationLifetime lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+
+const string echoConfigurationName = "WebSocketEcho";
+const string endpointSettingName = "Samples:WebSocket:Endpoint";
+
+string webSocketEndpointText = builder.Configuration[endpointSettingName] ?? "wss://ws.postman-echo.com/raw";
+
+string echoValidationId = Guid.NewGuid().ToString("N");
+
+logger.Configuration.Validating(echoConfigurationName, echoValidationId);
+
+Uri? webSocketEndpoint = null;
+
+if (Uri.TryCreate(webSocketEndpointText, UriKind.Absolute, out Uri? configuredEndpoint)
+    && (configuredEndpoint.Scheme == "ws" || configuredEndpoint.Scheme == "wss")
+    && !string.IsNullOrWhiteSpace(configuredEndpoint.Host))
+{
+    logger.Configuration.ValueIsValid(echoConfigurationName, echoValidationId, settingName: endpointSettingName);
+
+    logger.Configuration.Validated(echoConfigurationName, echoValidationId);
+
+    // Application policy: apply only the accepted candidate.
+    webSocketEndpoint = configuredEndpoint;
+}
+else
+{
+    const string reason = "Endpoint must be an absolute ws:// or wss:// address with a host";
+
+    logger.Configuration.ValueIsInvalid(echoConfigurationName, echoValidationId, settingName: endpointSettingName, reason: reason);
+
+    logger.Configuration.ValidationFailed(echoConfigurationName, echoValidationId, reason: reason);
+}
 
 SampleConsole.Dependencies.IReportFormatterSample reportFormatter;
 
@@ -107,6 +139,7 @@ Console.WriteLine("Application is running.");
 Console.WriteLine($"Configuration file: {pollingConfiguration.SourcePath}");
 Console.WriteLine($"Active polling interval: {pollingConfiguration.Current.PollingIntervalMilliseconds}ms");
 Console.WriteLine("  R       Reload polling configuration");
+Console.WriteLine("  E       Connect to the WebSocket Echo service");
 Console.WriteLine("  G       Generate a report - simulate unresolved DI");
 Console.WriteLine("  D       Simulate App in degraded mode");
 Console.WriteLine("  N       Simulate App in back to normal mode");
@@ -142,6 +175,28 @@ while (!shutdown.IsCompleted)
         Console.WriteLine(
             $"Active polling interval: " +
             $"{pollingConfiguration.Current.PollingIntervalMilliseconds} ms");
+
+        continue;
+    }
+
+    if (key == ConsoleKey.E)
+    {
+        if (webSocketEndpoint is null)
+        {
+            Console.WriteLine("Configure Samples:WebSocket:Endpoint with an absolute ws:// or wss:// address.");
+
+            continue;
+        }
+
+        try
+        {
+            await WebSocketConnectionSample.RunAsync(logger, webSocketEndpoint, lifetime.ApplicationStopping);
+        }
+        catch (OperationCanceledException)
+            when (lifetime.ApplicationStopping.IsCancellationRequested)
+        {
+            break;
+        }
 
         continue;
     }

@@ -53,5 +53,11 @@ logger.External.OperationTimedOut(@externalName, @operationName, @operationId, @
 
 ## Related events
 
-No beginning/completion relationships or lifecycle sequences are currently
-defined for this event.
+- Beginning associated with this failure: [201 — External\_Connecting](Event_201.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29)
+
+Relationships describe expected progression for the same application instance.
+Other records may appear between related events. Missing records can result
+from filtering, collection loss, or abrupt termination.
+
+See the [category guide](Category_External.md) for complete related transitions
+and lifecycle diagrams, including events from other categories when applicable.

@@ -12,11 +12,21 @@ published releases are identified by package and release date below.
 - Correlated beginning, success, and failure relationships for dependency
   resolution, including event 504.
 - Contract tests for resolution beginning and success events.
+- Events 201, `External_Connecting`, and 202, `External_Connected`,
+  describing explicit connection establishment or acquisition.
+- Beginning/completion relationships linking connection attempts to
+  success and applicable authentication, authorization, timeout,
+  and availability failures.
+- Contract tests for connection beginning and success events.
+- A ConnectExternalAsync helper for correlated connection events and
+  cooperative timeout cancellation, preserving operation exceptions.
 
 ### Changed
 
 - Expanded SampleConsole and dependency resolution guidance to demonstrate
   explicit beginning and outcome events.
+- Expanded external-operation guidance to distinguish connection
+  establishment from operations through existing connections.
 
 ## 0.0.9 - 2026-10-24
 

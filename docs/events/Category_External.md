@@ -11,6 +11,8 @@ Reports operations involving external dependencies\. Operation outcomes do not a
 
 | EventId | Category | Method | EventClass | LogLevel |
 | --- | --- | --- | --- | --- |
+| [201](Event_201.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [Connecting](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
+| [202](Event_202.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [Connected](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
 | [502](Event_502.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthenticationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [503](Event_503.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthorizationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [601](Event_601.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [OperationTimedOut](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29) | Exceptional | Error |
@@ -22,8 +24,36 @@ These diagrams show the beginning, completion, and failure outcomes
 explicitly declared in the catalog. Optional detail events and other
 category events may not participate.
 
-No beginning/completion relationships are currently defined for this category.
+### 201 — 202
+
+```mermaid
+flowchart LR
+    event201["201 — External_Connecting"]
+    event202["202 — External_Connected"]
+    event201 --> event202
+    event502["502 — External_AuthenticationFailed"]
+    event201 -->|Failure| event502
+    event503["503 — External_AuthorizationFailed"]
+    event201 -->|Failure| event503
+    event601["601 — External_OperationTimedOut"]
+    event201 -->|Failure| event601
+    event602["602 — External_ServiceUnavailable"]
+    event201 -->|Failure| event602
+```
+
+- Beginning: [201 — External\_Connecting](Event_201.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29)
+- Completion: [202 — External\_Connected](Event_202.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected%28System.String%2CSystem.String%2CSystem.String%29)
+- Failure: [502 — External\_AuthenticationFailed](Event_502.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+- Failure: [503 — External\_AuthorizationFailed](Event_503.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+- Failure: [601 — External\_OperationTimedOut](Event_601.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29)
+- Failure: [602 — External\_ServiceUnavailable](Event_602.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+
 
 ## Lifecycle sequences
 
 No lifecycle sequences are currently defined for this category.
+
+Complete relationships are shown when any participating event belongs to this
+category. Events from other categories remain visible to preserve the flow.
+Sequences describe expected progression, not a guarantee that every record
+will be emitted or retained.
