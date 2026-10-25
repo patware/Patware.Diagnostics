@@ -923,6 +923,92 @@ public readonly struct ExternalEvents
             "Obtain this event group through a logger's External property.");
 
     /// <summary>
+    /// Indicates that an explicit attempt to establish a connection to an external dependency is beginning.
+    /// </summary>
+    /// <param name="externalName">The stable logical dependency name, without credentials or sensitive addresses.</param>
+    /// <param name="operationName">The stable logical name of the explicit connection operation.</param>
+    /// <param name="operationId">The identifier of this connection attempt, shared with its outcome. Use a different identifier for each retry.</param>
+    /// <remarks>
+    /// <para>Emit immediately before invoking an API whose purpose is to establish or acquire a connection.</para>
+    /// <para>Define connection success according to the API being observed. State whether it represents a transport connection, an authenticated session, or an acquired connection from a pool.</para>
+    /// <para>This event describes connection establishment, not an ordinary business operation performed through an existing connection.</para>
+    /// <para>Do not infer an explicit connection attempt merely because an HTTP request or other dependency operation is beginning.</para>
+    /// <para>Use the same external name, operation name, and operation identifier for the outcome of this attempt.</para>
+    /// <para>A successful connection attempt produces External_Connected. Authentication rejection, authorization denial, timeout, or unavailability may produce their corresponding failure events when established by the connection API.</para>
+    /// <para>The listed failure events are not an exhaustive classification of every possible connection error. Do not relabel an unrelated exception as unavailability.</para>
+    /// <para>Cancellation, process termination, or an unclassified failure can prevent a corresponding catalog outcome. Missing completion does not by itself prove unavailability.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not establish connections, retry, or change application mode.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected">202 — External_Connected</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed">502 — External_AuthenticationFailed</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed">503 — External_AuthorizationFailed</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut">601 — External_OperationTimedOut</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable">602 — External_ServiceUnavailable</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Connecting(string @externalName, string @operationName, string @operationId)
+    {
+        ExternalEventMessages.Connecting(Logger, @externalName, @operationName, @operationId);
+    }
+
+    /// <summary>
+    /// Indicates that an explicit connection operation completed successfully according to the observed API&apos;s contract.
+    /// </summary>
+    /// <param name="externalName">The logical dependency name used by the beginning event.</param>
+    /// <param name="operationName">The logical connection operation name used by the beginning event.</param>
+    /// <param name="operationId">The identifier of the successfully completed connection attempt.</param>
+    /// <remarks>
+    /// <para>Emit immediately after the connection API reports successful establishment or acquisition, before performing subsequent business operations.</para>
+    /// <para>Use the same external name, operation name, and operation identifier as External_Connecting.</para>
+    /// <para>Success is limited to the observed API&apos;s contract. A transport connection alone does not establish application authentication or authorization.</para>
+    /// <para>Acquiring an open connection from a pool can satisfy the connection operation. This event does not prove that a new physical connection was created.</para>
+    /// <para>Successful connection establishment does not guarantee subsequent operation success or continued connection availability.</para>
+    /// <para>This event does not establish that the application has recovered from degraded mode.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not establish connections or change application state.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Connected(string @externalName, string @operationName, string @operationId)
+    {
+        ExternalEventMessages.Connected(Logger, @externalName, @operationName, @operationId);
+    }
+
+    /// <summary>
     /// Reports that an external dependency rejected authentication for an operation attempt.
     /// </summary>
     /// <param name="externalName">The stable logical dependency name, without credentials or request-specific data.</param>
@@ -941,6 +1027,15 @@ public readonly struct ExternalEvents
     /// <para>Report once at the boundary responsible for the dependency attempt. Avoid reporting the same rejection again at each calling layer.</para>
     /// <para>The event does not change application mode, refresh credentials, retry the operation, or initiate shutdown. Emit application mode events separately when functionality changes.</para>
     /// <para>User cancellation and application shutdown are not authentication rejections.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.7.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -972,6 +1067,15 @@ public readonly struct ExternalEvents
     /// <para>The event does not grant permission, choose a fallback, change application mode, retry the operation, or initiate shutdown.</para>
     /// <para>Cached fallback must respect the application&apos;s authorization and data-access policy. A dependency denial does not itself authorize access to cached data.</para>
     /// <para>User cancellation and application shutdown are not authorization denials.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.7.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1004,6 +1108,15 @@ public readonly struct ExternalEvents
     /// <para>This event reports a failed operation attempt. It does not establish that the dependency is permanently unavailable or that administrator intervention is immediately required.</para>
     /// <para>Emit Application_InDegradedMode separately only when application functionality becomes reduced. Emit Application_InNormalMode only when the application subsequently recovers from that degradation.</para>
     /// <para>Calling this method only emits a diagnostic record. It does not cancel operations, retry requests, manage a circuit breaker, or change application state.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.5.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1040,6 +1153,15 @@ public readonly struct ExternalEvents
     /// <para>A failed attempt does not automatically change application mode. Emit Application_InDegradedMode separately when functionality becomes reduced and Application_InNormalMode after recovery.</para>
     /// <para>User cancellation and application shutdown are not availability failures.</para>
     /// <para>Calling this method only emits a diagnostic record. It does not retry requests, operate a circuit breaker, or change application state.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.6.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1063,6 +1185,22 @@ public readonly struct ExternalEvents
 /// </remarks>
 internal static partial class ExternalEventMessages
 {
+    [LoggerMessage(
+        EventId = 201,
+        EventName = "External_Connecting",
+        Level = LogLevel.Information,
+        Message = "Connecting to external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.")]
+    internal static partial void Connecting(
+        ILogger logger, string ExternalName, string OperationName, string OperationId);
+
+    [LoggerMessage(
+        EventId = 202,
+        EventName = "External_Connected",
+        Level = LogLevel.Information,
+        Message = "Connected to external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.")]
+    internal static partial void Connected(
+        ILogger logger, string ExternalName, string OperationName, string OperationId);
+
     [LoggerMessage(
         EventId = 502,
         EventName = "External_AuthenticationFailed",
