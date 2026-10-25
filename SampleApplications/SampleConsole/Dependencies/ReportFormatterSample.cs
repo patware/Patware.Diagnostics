@@ -37,6 +37,11 @@ internal sealed class ReportFormatterSample(IHost host, ILogger<ReportFormatterS
 
         string resolutionId = Guid.NewGuid().ToString("N");
 
+        logger.Dependency.Resolving(
+            dependencyName: nameof(IReportFormatter),
+            operationName: nameof(GenerateReport),
+            resolutionId: resolutionId);
+
         try
         {
             formatter = host.Services.GetRequiredService<IReportFormatter>();
@@ -57,6 +62,11 @@ internal sealed class ReportFormatterSample(IHost host, ILogger<ReportFormatterS
 
             return unformatted;
         }
+
+        logger.Dependency.Resolved(
+            dependencyName: nameof(IReportFormatter),
+            operationName: nameof(GenerateReport),
+            resolutionId: resolutionId);
 
         return formatter.Format(unformatted);
     }

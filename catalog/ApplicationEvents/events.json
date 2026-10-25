@@ -217,6 +217,82 @@
       "Status": "Stable",
       "Since": "0.0.4"
     },
+    "115": {
+      "EventId": 115,
+      "EventName": "Dependency_Resolving",
+      "Category": "Dependency",
+      "Method": "Resolving",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Resolving dependency {DependencyName}. Operation: {OperationName}. Resolution: {ResolutionId}.",
+      "Arguments": [
+        {
+          "Name": "dependencyName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the component being resolved."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical operation requiring the component."
+        },
+        {
+          "Name": "resolutionId",
+          "ValueType": "string",
+          "Summary": "The unique identifier of this resolution attempt, shared with its outcome event."
+        }
+      ],
+      "Summary": "Indicates that an attempt to obtain a requested application component is beginning.",
+      "Trigger": "Emit immediately before requesting the component from its resolution mechanism.",
+      "Remarks": [
+        "Use a new resolution identifier for each attempt, including retries.",
+        "An observed attempt that completes normally emits Dependency_Resolved. An observed failure to supply the requested component emits Dependency_ResolutionFailed.",
+        "Cancellation or process termination can prevent an outcome. Absence of an outcome does not prove resolution failed.",
+        "Registration and container validation are separate phases and are not resolution attempts.",
+        "This event describes one requested component, not initialization of every dependency in the application.",
+        "Calling this method only emits a diagnostic record. It does not resolve components or enforce event ordering."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.10"
+    },
+    "116": {
+      "EventId": 116,
+      "EventName": "Dependency_Resolved",
+      "Category": "Dependency",
+      "Method": "Resolved",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Dependency {DependencyName} resolved. Operation: {OperationName}. Resolution: {ResolutionId}.",
+      "Arguments": [
+        {
+          "Name": "dependencyName",
+          "ValueType": "string",
+          "Summary": "The logical component name used by the beginning event."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The logical operation name used by the beginning event."
+        },
+        {
+          "Name": "resolutionId",
+          "ValueType": "string",
+          "Summary": "The identifier of the successfully completed resolution attempt."
+        }
+      ],
+      "Summary": "Indicates that the requested application component was supplied successfully.",
+      "Trigger": "Emit immediately after obtaining the required component, before performing business operations with it.",
+      "Remarks": [
+        "Use the same dependency name, operation name, and resolution identifier as Dependency_Resolving.",
+        "A cached instance satisfies resolution; this event does not imply that a new instance was constructed.",
+        "A null result from an optional lookup does not establish that the requested component was supplied.",
+        "Successful resolution does not prove external connectivity, business-operation success, component health, or initialization of every application dependency.",
+        "This event does not indicate recovery from degraded application mode.",
+        "Calling this method only emits a diagnostic record. It does not resolve components or change application state."
+      ],
+      "Status": "Stable",
+      "Since": "0.0.10"
+    },
     "204": {
       "EventId": 204,
       "EventName": "Application_InNormalMode",
@@ -752,6 +828,13 @@
         "Ed": "112",
         "Fails": [
           "507"
+        ]
+      },
+      {
+        "Ing": "115",
+        "Ed": "116",
+        "Fails": [
+          "504"
         ]
       }
     ],

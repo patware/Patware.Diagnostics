@@ -3,6 +3,21 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.10 - Unpublished
+
+### Added
+
+- Events 115, `Dependency_Resolving`, and 116, `Dependency_Resolved`,
+  describing individual component-resolution attempts.
+- Correlated beginning, success, and failure relationships for dependency
+  resolution, including event 504.
+- Contract tests for resolution beginning and success events.
+
+### Changed
+
+- Expanded SampleConsole and dependency resolution guidance to demonstrate
+  explicit beginning and outcome events.
+
 ## 0.0.9 - 2026-10-24
 
 ### Added

@@ -1,9 +1,18 @@
 # Dependency resolution
 
-[504 — Dependency_ResolutionFailed](../events/Event_504.md) reports an attempt
-to locate, load, or construct an application component that could not supply
-the requested component. It is a Warning event with caller-supplied dependency,
-operation, resolution-attempt identifier, reason code, and optional exception.
+Dependency events describe one attempt to locate, load, or obtain an application
+component. The application supplies the dependency name, requesting operation,
+and a shared resolution-attempt identifier.
+
+| Event | Level | Meaning |
+| --- | --- | --- |
+| [115 — Dependency_Resolving](../events/Event_115.md) | Information | An attempt to obtain the requested component is beginning. |
+| [116 — Dependency_Resolved](../events/Event_116.md) | Information | The requested component was supplied successfully. |
+| [504 — Dependency_ResolutionFailed](../events/Event_504.md) | Warning | The attempt failed to supply the requested component; a reason code and optional exception describe the failure. |
+
+Successful resolution can return an existing instance. It does not imply new
+construction, component health, external connectivity, or successful business
+operations. An optional lookup returning null does not establish success.
 
 ## Registration, validation, and resolution
 
@@ -21,8 +30,8 @@ constructor or factory throws. Event 504 describes the failed request; it does
 not necessarily identify the innermost component responsible for the failure.
 
 `AddApplicationEvents()` does not automatically intercept dependency injection
-resolution failures. The application explicitly emits 504 at the boundary that
-owns the attempt. The event also applies to other component-resolution
+resolution attempts. The application explicitly emits these events at the boundary
+that owns the attempt. The events also apply to other component-resolution
 mechanisms, such as plugin loading.
 
 ## Observe the resolution boundary
@@ -37,6 +46,11 @@ resolution attempt being observed.
 ```csharp
 string resolutionId = Guid.NewGuid().ToString("N");
 IFoo foo;
+
+logger.Dependency.Resolving(
+    dependencyName: nameof(IFoo),
+    operationName: "ResolveFoo",
+    resolutionId: resolutionId);
 
 try
 {
@@ -59,6 +73,11 @@ catch (Exception ex) when (ex is not OperationCanceledException)
     throw;
 }
 
+logger.Dependency.Resolved(
+    dependencyName: nameof(IFoo),
+    operationName: "ResolveFoo",
+    resolutionId: resolutionId);
+
 // Business operations using foo belong outside the resolution catch.
 ```
 
@@ -70,10 +89,32 @@ continuing instead requires an explicit application policy, such as the sample's
 fallback. Report the attempt once rather than emitting duplicate records at each
 calling layer.
 
+Beginning and success logging sit outside the resolution `try` so an exception
+from either logging call is not misclassified as a failure to resolve the component.
+If a failure handler continues with a fallback, return or otherwise branch away
+from the success event. A fallback does not turn the failed original attempt into
+a successful resolution.
+
+## Outcomes and filtering
+
+An observed attempt that supplies the component has the sequence 115 → 116.
+An observed resolution failure has the sequence 115 → 504. These are alternative
+outcomes, not a sequence of all three events. Event methods do not enforce order,
+deduplicate records, or emit outcomes automatically.
+
+Cancellation is excluded from the failure catch. Cancellation or process termination
+can leave a beginning event without an outcome. Missing 116 or 504 is therefore a
+reason to investigate, not proof that the requested component was unavailable.
+
+Logging filters can also hide records: a Warning minimum level excludes Information
+events 115 and 116 while retaining 504. Interpret incomplete sequences in the context
+of the configured filters and logging delivery.
+
 ## Correlation and exception details
 
 Use a new `ResolutionId` for each attempt and preserve it across records for that
-attempt. Use stable logical dependency and operation names rather than sensitive
+attempt. Use the same dependency and operation names for the beginning and outcome.
+Use stable logical dependency and operation names rather than sensitive
 paths or configuration contents.
 
 `ResolutionThrew` means the resolution call threw without asserting a more
@@ -100,11 +141,11 @@ dotnet run --project ./SampleApplications/SampleConsole -- `
 ```
 
 This option deliberately skips registration of `IReportFormatterSample`.
-Program's subsequent `GetRequiredService<IReportFormatterSample>()` fails,
-emits 504, and exits with code 1. With Warning logging enabled, the failure is
+Program emits 115 before `GetRequiredService<IReportFormatterSample>()`. The request
+fails, emits 504 instead of 116, and exits with code 1. With Warning logging enabled, the failure is
 visible even though the host has not started. Application lifecycle events
 101–104 are not expected from this path because `host.StartAsync()` is not reached.
-Other diagnostics, including configuration-loading records, may precede 504.
+Other diagnostics, including configuration-loading records, may precede this attempt.
 
 The option is read once before registration. Restart the application to change
 the scenario; configuration reload does not rebuild the service provider.
@@ -115,29 +156,41 @@ the scenario; configuration reload does not rebuild the service provider.
 dotnet run --project ./SampleApplications/SampleConsole
 ```
 
-With the option absent or false, `IReportFormatterSample` is registered and the
-application starts normally. Press **G** to generate a report.
+With the option absent or false, `IReportFormatterSample` is registered. Program
+emits 115 and then 116 for its successful resolution before starting the host.
+The application starts normally. Press **G** to generate a report.
 
 `ReportFormatterSample` requests `IReportFormatter`, which is intentionally
-unregistered. It emits 504 and returns `Basic report: Sample data`. Each press
+unregistered. It emits 115 and then 504, omits 116, and returns
+`Basic report: Sample data`. Each press
 performs a new attempt with a new identifier. The sample currently has no
 concrete `IReportFormatter` implementation and therefore demonstrates the failed
 resolution and fallback, rather than successful formatting through that interface.
+
+With Information logging enabled, expect these dependency sequences:
+
+| Scenario | Sequence | Application policy |
+| --- | --- | --- |
+| Normal startup | 115 → 116 | Start the host. |
+| Startup failure option enabled | 115 → 504 | Exit with code 1 before host startup. |
+| Press G after normal startup | 115 → 504 | Return the basic report and continue running. |
 
 ## Application policy and related events
 
 ```mermaid
 flowchart TD
-    request["Request component"] --> outcome{"Resolution succeeds?"}
-    outcome -->|Yes| use["Use returned component"]
-    outcome -->|No| failure["504 — Dependency_ResolutionFailed"]
+    resolving["115 — Dependency_Resolving"] --> resolved["116 — Dependency_Resolved"]
+    resolving --> failure["504 — Dependency_ResolutionFailed"]
+    resolved --> use["Use returned component"]
     failure --> policy{"Application policy"}
     policy --> stop["Startup example: exit with code 1"]
     policy --> fallback["Report example: return basic report"]
 ```
 
-These are application workflows, not mandatory catalog lifecycle transitions.
-Event 504 does not resolve components, select a fallback, or stop the application.
+The catalog declares the beginning/completion relationship between 115 and 116,
+with 504 as the failure outcome. Fallback and shutdown branches illustrate
+application policy; they are not additional catalog lifecycle transitions.
+These event methods do not resolve components, select a fallback, or stop the application.
 
 Neither sample path automatically emits
 [401 — Application_InDegradedMode](../events/Event_401.md). Emit 401 only when

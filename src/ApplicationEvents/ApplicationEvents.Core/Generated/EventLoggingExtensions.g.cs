@@ -742,6 +742,78 @@ public readonly struct DependencyEvents
             "Obtain this event group through a logger's Dependency property.");
 
     /// <summary>
+    /// Indicates that an attempt to obtain a requested application component is beginning.
+    /// </summary>
+    /// <param name="dependencyName">The non-sensitive logical name of the component being resolved.</param>
+    /// <param name="operationName">The non-sensitive logical operation requiring the component.</param>
+    /// <param name="resolutionId">The unique identifier of this resolution attempt, shared with its outcome event.</param>
+    /// <remarks>
+    /// <para>Emit immediately before requesting the component from its resolution mechanism.</para>
+    /// <para>Use a new resolution identifier for each attempt, including retries.</para>
+    /// <para>An observed attempt that completes normally emits Dependency_Resolved. An observed failure to supply the requested component emits Dependency_ResolutionFailed.</para>
+    /// <para>Cancellation or process termination can prevent an outcome. Absence of an outcome does not prove resolution failed.</para>
+    /// <para>Registration and container validation are separate phases and are not resolution attempts.</para>
+    /// <para>This event describes one requested component, not initialization of every dependency in the application.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not resolve components or enforce event ordering.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolved">116 — Dependency_Resolved</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.DependencyEvents.ResolutionFailed">504 — Dependency_ResolutionFailed</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.10.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Resolving(string @dependencyName, string @operationName, string @resolutionId)
+    {
+        DependencyEventMessages.Resolving(Logger, @dependencyName, @operationName, @resolutionId);
+    }
+
+    /// <summary>
+    /// Indicates that the requested application component was supplied successfully.
+    /// </summary>
+    /// <param name="dependencyName">The logical component name used by the beginning event.</param>
+    /// <param name="operationName">The logical operation name used by the beginning event.</param>
+    /// <param name="resolutionId">The identifier of the successfully completed resolution attempt.</param>
+    /// <remarks>
+    /// <para>Emit immediately after obtaining the required component, before performing business operations with it.</para>
+    /// <para>Use the same dependency name, operation name, and resolution identifier as Dependency_Resolving.</para>
+    /// <para>A cached instance satisfies resolution; this event does not imply that a new instance was constructed.</para>
+    /// <para>A null result from an optional lookup does not establish that the requested component was supplied.</para>
+    /// <para>Successful resolution does not prove external connectivity, business-operation success, component health, or initialization of every application dependency.</para>
+    /// <para>This event does not indicate recovery from degraded application mode.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not resolve components or change application state.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolving">115 — Dependency_Resolving</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.10.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Resolved(string @dependencyName, string @operationName, string @resolutionId)
+    {
+        DependencyEventMessages.Resolved(Logger, @dependencyName, @operationName, @resolutionId);
+    }
+
+    /// <summary>
     /// Reports that an attempt to locate, load, or construct a requested application component failed.
     /// </summary>
     /// <param name="dependencyName">The non-sensitive logical name of the component being resolved.</param>
@@ -763,6 +835,15 @@ public readonly struct DependencyEvents
     /// <para>The application may select a fallback, disable a feature, or stop. A resolution failure does not automatically establish degraded application mode.</para>
     /// <para>A later successful resolution does not by itself establish recovery to normal application mode.</para>
     /// <para>Calling this method only emits a diagnostic record. It does not resolve components, retry, select a fallback, change application mode, or initiate shutdown.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolving">115 — Dependency_Resolving</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.9.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -786,6 +867,22 @@ public readonly struct DependencyEvents
 /// </remarks>
 internal static partial class DependencyEventMessages
 {
+    [LoggerMessage(
+        EventId = 115,
+        EventName = "Dependency_Resolving",
+        Level = LogLevel.Information,
+        Message = "Resolving dependency {DependencyName}. Operation: {OperationName}. Resolution: {ResolutionId}.")]
+    internal static partial void Resolving(
+        ILogger logger, string DependencyName, string OperationName, string ResolutionId);
+
+    [LoggerMessage(
+        EventId = 116,
+        EventName = "Dependency_Resolved",
+        Level = LogLevel.Information,
+        Message = "Dependency {DependencyName} resolved. Operation: {OperationName}. Resolution: {ResolutionId}.")]
+    internal static partial void Resolved(
+        ILogger logger, string DependencyName, string OperationName, string ResolutionId);
+
     [LoggerMessage(
         EventId = 504,
         EventName = "Dependency_ResolutionFailed",

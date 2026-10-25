@@ -37,6 +37,10 @@ items:
 - name: Dependency
   href: Category_Dependency.md
   items:
+  - name: 115 — Dependency_Resolving
+    href: Event_115.md
+  - name: 116 — Dependency_Resolved
+    href: Event_116.md
   - name: 504 — Dependency_ResolutionFailed
     href: Event_504.md
 - name: External
