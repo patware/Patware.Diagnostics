@@ -50,8 +50,14 @@ SampleConsole.Dependencies.IReportFormatterSample reportFormatter;
 
 string resolutionId = Guid.NewGuid().ToString("N");
 
+logger.Dependency.Resolving(
+    dependencyName: nameof(SampleConsole.Dependencies.IReportFormatterSample),
+    operationName: "Program Startup",
+    resolutionId: resolutionId);
+
 try
 {
+
     reportFormatter = host.Services.GetRequiredService<SampleConsole.Dependencies.IReportFormatterSample>();
 }
 catch (Exception ex) when (ex is not OperationCanceledException)
@@ -73,6 +79,11 @@ catch (Exception ex) when (ex is not OperationCanceledException)
     Environment.ExitCode = 1;
     return;
 }
+
+logger.Dependency.Resolved(
+    dependencyName: nameof(SampleConsole.Dependencies.IReportFormatterSample),
+    operationName: "Program Startup",
+    resolutionId: resolutionId);
 
 // Complete startup before accepting input so the exception observer
 // is subscribed before the simulated failure can occur.

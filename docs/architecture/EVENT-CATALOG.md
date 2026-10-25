@@ -47,6 +47,18 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_112.md) · [Configuration category](../events/Category_Configuration.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validated%28System.String%2CSystem.String%29)
 
+<a id="event-115"></a>
+
+## 115 — Dependency_Resolving
+
+[Event documentation](../events/Event_115.md) · [Dependency category](../events/Category_Dependency.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolving%28System.String%2CSystem.String%2CSystem.String%29)
+
+<a id="event-116"></a>
+
+## 116 — Dependency_Resolved
+
+[Event documentation](../events/Event_116.md) · [Dependency category](../events/Category_Dependency.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolved%28System.String%2CSystem.String%2CSystem.String%29)
+
 <a id="event-204"></a>
 
 ## 204 — Application_InNormalMode
