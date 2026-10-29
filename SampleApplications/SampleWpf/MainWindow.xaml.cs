@@ -165,6 +165,7 @@ public partial class MainWindow : Window
         RefreshButton.IsEnabled = false;
         AvailabilityButton.IsEnabled = false;
         CatalogStatusText.Text = "Contacting the product service…";
+        SimulatedServiceMode mode = _serviceMode;
 
         string operationId = Guid.NewGuid().ToString("N");
         TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
@@ -178,7 +179,7 @@ public partial class MainWindow : Window
 
         try
         {
-            ProductServiceResult result = await SimulatedProductService.FetchAsync(_serviceMode, request.Token);
+            IReadOnlyList<ProductPrice> result = await SimulatedProductService.FetchAsync(mode, request.Token);
 
             // Cancellation can arrive after the service finishes but before
             // the dispatcher resumes this handler.
@@ -189,55 +190,8 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (!result.IsSuccess)
-            {
-                string failure;
 
-                switch (result.Status)
-                {
-                    case ProductServiceStatus.Unavailable:
-                        _logger.External.ServiceUnavailable(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "ServiceUnavailable",
-                            exception: null);
-
-                        failure = "Product service reported unavailability";
-                        break;
-
-                    case ProductServiceStatus.AuthenticationRejected:
-                        _logger.External.AuthenticationFailed(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "AuthenticationRejected",
-                            exception: null);
-
-                        failure = "Product service rejected application authentication";
-                        break;
-
-                    case ProductServiceStatus.AuthorizationDenied:
-                        _logger.External.AuthorizationFailed(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "PermissionDenied",
-                            exception: null);
-
-                        failure = "Product service denied the application permission";
-                        break;
-
-                    default:
-                        throw new InvalidOperationException(
-                            $"Unexpected product-service result: {result.Status}.");
-                }
-
-                ShowFailedRefresh(failure, "Refresh failed. See the diagnostic log.");
-                return;
-            }
-
-            decimal price = result.Products
+            decimal price = result
                 .Single(product => product.Name == "Coffee")
                 .Price;
 
@@ -276,6 +230,66 @@ public partial class MainWindow : Window
             ShowFailedRefresh(
                 failure: "Product service timed out",
                 status: "Refresh timed out.");
+        }
+        catch (SimulatedAuthenticationRejectedException)
+        {
+            if (_closed
+                || _actionRequested
+                || _lifetime.ApplicationStopping.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _logger.External.AuthenticationFailed(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "AuthenticationRejected",
+                null);
+
+            ShowFailedRefresh(
+                "Product service rejected application authentication",
+                "Authentication rejected. Retaining the cached price.");
+        }
+        catch (SimulatedAuthorizationDeniedException)
+        {
+            if (_closed
+                || _actionRequested
+                || _lifetime.ApplicationStopping.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _logger.External.AuthorizationFailed(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "PermissionDenied",
+                null);
+
+            ShowFailedRefresh(
+                "Product service denied the application permission",
+                "Permission denied. Retaining the cached price.");
+        }
+        catch (SimulatedServiceUnavailableException)
+        {
+            if (_closed
+                || _actionRequested
+                || _lifetime.ApplicationStopping.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _logger.External.ServiceUnavailable(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "ServiceUnavailable",
+                null);
+
+            ShowFailedRefresh(
+                "Product service reported unavailability",
+                "Service unavailable. Retaining the cached price.");
         }
         catch (Exception exception)
         {

@@ -31,8 +31,8 @@ logger.External.OperationTimedOut(@externalName, @operationName, @operationId, @
 
 ## Arguments
 
-- `externalName` (`string`): The stable logical name of the external dependency, without credentials or request\-specific data\.
-- `operationName` (`string`): The stable logical name of the operation that timed out\.
+- `externalName` (`string`): The logical name of the external dependency, without credentials or request\-specific data\.
+- `operationName` (`string`): The logical name of the operation that timed out\.
 - `operationId` (`string`): The identifier of this individual operation attempt\. Use a different identifier for each retry\.
 - `timeoutMilliseconds` (`double`): The configured timeout budget for this attempt, in milliseconds, rather than its measured elapsed duration\.
 - `exception` (`Exception`): The original exception associated with the confirmed timeout\.
@@ -54,6 +54,7 @@ logger.External.OperationTimedOut(@externalName, @operationName, @operationId, @
 ## Related events
 
 - Beginning associated with this failure: [201 — External\_Connecting](Event_201.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29)
+- Beginning associated with this failure: [203 — External\_Calling](Event_203.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling%28System.String%2CSystem.String%2CSystem.String%29)
 
 Relationships describe expected progression for the same application instance.
 Other records may appear between related events. Missing records can result

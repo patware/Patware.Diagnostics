@@ -34,7 +34,7 @@ logger.Dependency.ResolutionFailed(@dependencyName, @operationName, @resolutionI
 - `dependencyName` (`string`): The non\-sensitive logical name of the component being resolved\.
 - `operationName` (`string`): The non\-sensitive logical operation requiring the component\.
 - `resolutionId` (`string`): The unique identifier of this resolution attempt\. Use a new identifier for each retry\.
-- `reasonCode` (`string`): A stable application\-defined classification, such as NotFound, LoadFailed, or ConstructionFailed\.
+- `reasonCode` (`string`): An application\-defined classification, such as NotFound, LoadFailed, or ConstructionFailed\.
 - `exception` (`Exception?`): The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged\.
 
 ## Remarks

@@ -1,4 +1,6 @@
+
 {
+  "$schema": "./events.schema.json",
   "Categories": {
     "Application": {
       "Name": "Application",
@@ -305,12 +307,12 @@
         {
           "Name": "externalName",
           "ValueType": "string",
-          "Summary": "The stable logical dependency name, without credentials or sensitive addresses."
+          "Summary": "The logical dependency name, without credentials or sensitive addresses."
         },
         {
           "Name": "operationName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the explicit connection operation."
+          "Summary": "The logical name of the explicit connection operation."
         },
         {
           "Name": "operationId",
@@ -331,7 +333,7 @@
         "Calling this method only emits a diagnostic record. It does not establish connections, retry, or change application mode."
       ],
       "Status": "Stable",
-      "Since": "0.0.11"
+      "Since": "0.0.10"
     },
     "202": {
       "EventId": 202,
@@ -369,7 +371,46 @@
         "Calling this method only emits a diagnostic record. It does not establish connections or change application state."
       ],
       "Status": "Stable",
-      "Since": "0.0.11"
+      "Since": "0.0.10"
+    },
+    "203": {
+      "EventId": 203,
+      "EventName": "External_Calling",
+      "Category" : "External",
+      "Method" : "Calling",
+      "EventClass" : "OperationalInformation",
+      "LogLevel": "Information",
+      "Message": "Calling external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The logical dependency name, without credentials or request-specific data."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The logical name of the external operation."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this individual operation attempt. Use a different identifier for each retry."
+        }
+      ],
+      "Summary": "Indicates that an individual external operation attempt is beginning.",
+      "Trigger": "Emit immediately before invoking the external operation.",
+      "Remarks": [
+        "Normal method return does not necessarily mean success.",
+        "Successful empty results can still be successful.",
+        "Success does not establish application recovery or guarantee future availability.",
+        "Timeouts do not establish that remote execution stopped.",
+        "Retries are separate attempts with new identifiers.",
+        "Cancellation and unclassified outcomes can leave 203 without a catalog outcome.",
+        "Neither event performs the operation or changes application state."
+      ],
+      "Status" : "Stable",
+      "Since" : "0.0.11"
     },
     "204": {
       "EventId": 204,
@@ -392,6 +433,43 @@
       ],
       "Status": "Stable",
       "Since": "0.0.3"
+    },
+    "214": {
+      "EventId": 214,
+      "EventName": "External_CallCompleted",
+      "Category" : "External",
+      "Method" : "CallCompleted",
+      "EventClass" : "OperationalInformation",
+      "Message": "External dependency {ExternalName} operation completed. Operation: {OperationName}. Attempt: {OperationId}.",
+      "Arguments": [
+        {
+          "Name": "externalName",
+          "ValueType": "string",
+          "Summary": "The logical dependency name, without credentials or request-specific data."
+        },
+        {
+          "Name": "operationName",
+          "ValueType": "string",
+          "Summary": "The logical name of the external operation."
+        },
+        {
+          "Name": "operationId",
+          "ValueType": "string",
+          "Summary": "The identifier of this individual operation attempt. Use a different identifier for each retry."
+        }
+      ],
+      "Summary": "Indicates that an external operation delegate returned normally.",
+      "Trigger": "Emit immediately after the operation returns normally, before interpreting or using its result.",
+      "Remarks": [
+        "Normal completion does not establish business success. The returned value may describe a rejection or other unsuccessful outcome.",
+        "An exception or observed cancellation prevents this completion event.",
+        "Use the same external name, operation name, and operation identifier as External_Calling.",
+        "This event does not establish application recovery or guarantee future dependency availability.",
+        "Calling this method only emits a diagnostic record. It does not perform the operation or inspect its result."
+      ],
+      "LogLevel": "Information",
+      "Status" : "Stable",
+      "Since" : "0.0.11"
     },
     "401": {
       "EventId": 401,
@@ -449,7 +527,7 @@
         {
           "Name": "reasonCode",
           "ValueType": "string",
-          "Summary": "A stable application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed."
+          "Summary": "An application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed."
         },
         {
           "Name": "exception",
@@ -488,12 +566,12 @@
         {
           "Name": "externalName",
           "ValueType": "string",
-          "Summary": "The stable logical dependency name, without credentials or request-specific data."
+          "Summary": "The logical dependency name, without credentials or request-specific data."
         },
         {
           "Name": "operationName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the operation whose authentication was rejected."
+          "Summary": "The logical name of the operation whose authentication was rejected."
         },
         {
           "Name": "operationId",
@@ -503,7 +581,7 @@
         {
           "Name": "reasonCode",
           "ValueType": "string",
-          "Summary": "A stable application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content."
+          "Summary": "An application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content."
         },
         {
           "Name": "exception",
@@ -539,12 +617,12 @@
         {
           "Name": "externalName",
           "ValueType": "string",
-          "Summary": "The stable logical dependency name, without credentials or request-specific data."
+          "Summary": "The logical dependency name, without credentials or request-specific data."
         },
         {
           "Name": "operationName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the operation whose permission was denied."
+          "Summary": "The logical name of the operation whose permission was denied."
         },
         {
           "Name": "operationId",
@@ -554,7 +632,7 @@
         {
           "Name": "reasonCode",
           "ValueType": "string",
-          "Summary": "A stable application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content."
+          "Summary": "An application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content."
         },
         {
           "Name": "exception",
@@ -606,7 +684,7 @@
         {
           "Name": "reasonCode",
           "ValueType": "string",
-          "Summary": "A stable application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed."
+          "Summary": "An application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed."
         },
         {
           "Name": "exception",
@@ -728,12 +806,12 @@
         {
           "Name": "externalName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the external dependency, without credentials or request-specific data."
+          "Summary": "The logical name of the external dependency, without credentials or request-specific data."
         },
         {
           "Name": "operationName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the operation that timed out."
+          "Summary": "The logical name of the operation that timed out."
         },
         {
           "Name": "operationId",
@@ -781,12 +859,12 @@
         {
           "Name": "externalName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the dependency, without credentials or request-specific data."
+          "Summary": "The logical name of the dependency, without credentials or request-specific data."
         },
         {
           "Name": "operationName",
           "ValueType": "string",
-          "Summary": "The stable logical name of the operation the dependency could not serve."
+          "Summary": "The logical name of the operation the dependency could not serve."
         },
         {
           "Name": "operationId",
@@ -796,7 +874,7 @@
         {
           "Name": "reasonCode",
           "ValueType": "string",
-          "Summary": "A stable application-defined classification of the observed availability failure, such as ServiceUnavailable. Do not include response bodies or exception messages."
+          "Summary": "An application-defined classification of the observed availability failure, such as ServiceUnavailable. Do not include response bodies or exception messages."
         },
         {
           "Name": "exception",
@@ -918,6 +996,16 @@
       {
         "Ing": "201",
         "Ed": "202",
+        "Fails": [
+          "502",
+          "503",
+          "601",
+          "602"
+        ]
+      },
+      {
+        "Ing": "203",
+        "Ed": "214",
         "Fails": [
           "502",
           "503",

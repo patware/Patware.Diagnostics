@@ -298,6 +298,44 @@ See the catalog entries for [201 — Connecting](../events/Event_201.md),
 [601 — OperationTimedOut](../events/Event_601.md), and
 [602 — ServiceUnavailable](../events/Event_602.md) for the complete contracts.
 
+## External call observation helper
+
+`RunExternalAsync` observes an explicitly supplied external operation.
+It emits 203 before invocation and 214 when the delegate returns normally.
+It returns the original value without interpreting business success.
+
+```csharp
+IReadOnlyList<ProductPrice> products = await logger.RunExternalAsync(
+    token => SimulatedProductService.FetchAsync(mode, token),
+    externalName: "ProductService",
+    operationName: "FetchPrice",
+    operationId: operationId,
+    timeout: TimeSpan.FromSeconds(2),
+    cancellationToken: stoppingToken);
+```
+
+This example assumes an existing logger, captured simulation mode,
+attempt identifier, and application shutdown token.
+
+Only the delegate is required. The dependency name defaults to
+`UnspecifiedExternal`; the operation name defaults to the calling member.
+Supply explicit names when stable dependency identification matters.
+
+An omitted timeout adds no deadline. A supplied timeout requests cooperative
+cancellation through the delegate's token. The tokenless overload cannot
+pass that token into the dependency.
+
+Deadline cancellation emits 601 and rethrows the original exception.
+Caller cancellation does not emit 601. Other exceptions propagate without
+automatic authentication, authorization, or availability classification.
+
+The sample applications recognize their own simulated exceptions and emit
+502, 503, or 602 at the application boundary. They retain responsibility
+for cache preservation and application-mode transitions.
+
+Do not manually duplicate 203, 214, or the helper's timeout event around
+the same attempt. Logging filters do not disable operation execution.
+
 ## Shared sample simulation
 
 The Blazor, Worker Service, and WPF samples use the non-packable

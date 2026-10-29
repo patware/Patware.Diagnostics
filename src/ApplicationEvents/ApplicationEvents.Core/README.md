@@ -65,7 +65,9 @@ stages; they are not a complete application startup/shutdown implementation.
 | 116 | `Dependency_Resolved` | Information | `Dependency.Resolved(...)` | `DependencyName`, `OperationName`, `ResolutionId` |
 | 201 | `External_Connecting` | Information | `External.Connecting(...)` | `ExternalName`, `OperationName`, `OperationId` |
 | 202 | `External_Connected` | Information | `External.Connected(...)` | `ExternalName`, `OperationName`, `OperationId` |
+| 203 | `External_Calling` | Information | `External.Calling(...)` | `ExternalName`, `OperationName`, `OperationId` |
 | 204 | `Application_InNormalMode` | Information | `Application.InNormalMode()` | None |
+| 214 | `External_CallCompleted` | Information | `External.CallCompleted(...)` | `ExternalName`, `OperationName`, `OperationId` |
 | 401 | `Application_InDegradedMode` | Warning | `Application.InDegradedMode(string reason)` | `Reason` |
 | 501 | `Configuration_LoadFailed` | Warning | `Configuration.LoadFailed(...)` | `ConfigurationName`, `SourceName`, `LoadId`, `ReasonCode` |
 | 502 | `External_AuthenticationFailed` | Warning | `External.AuthenticationFailed(...)` | `ExternalName`, `OperationName`, `OperationId`, `ReasonCode` |

@@ -71,11 +71,23 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_202.md) · [External category](../events/Category_External.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected%28System.String%2CSystem.String%2CSystem.String%29)
 
+<a id="event-203"></a>
+
+## 203 — External_Calling
+
+[Event documentation](../events/Event_203.md) · [External category](../events/Category_External.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling%28System.String%2CSystem.String%2CSystem.String%29)
+
 <a id="event-204"></a>
 
 ## 204 — Application_InNormalMode
 
 [Event documentation](../events/Event_204.md) · [Application category](../events/Category_Application.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InNormalMode)
+
+<a id="event-214"></a>
+
+## 214 — External_CallCompleted
+
+[Event documentation](../events/Event_214.md) · [External category](../events/Category_External.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.CallCompleted%28System.String%2CSystem.String%2CSystem.String%29)
 
 <a id="event-401"></a>
 
