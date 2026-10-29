@@ -137,9 +137,7 @@ public static class ExternalOperationExtensions
     /// <param name="operationId">
     /// The attempt identifier, or null to generate one.
     /// </param>
-    /// <returns>
     /// <returns>The original result returned by the operation.</returns>
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// A required reference argument is null.
     /// </exception>
@@ -152,31 +150,6 @@ public static class ExternalOperationExtensions
     /// <exception cref="OperationCanceledException">
     /// Cancellation is observed by the operation or was already requested.
     /// </exception>
-    /// <remarks>
-    /// <para>
-    /// Emits 203 before invoking the operation. After normal completion,
-    /// classification selects 214, 502, 503, 602, or no outcome event.
-    /// </para>
-    /// <para>
-    /// Deadline cancellation emits 601 and rethrows the original exception.
-    /// Caller cancellation takes precedence and does not emit 601.
-    /// Other operation exceptions propagate without inferred classifications.
-    /// </para>
-    /// <para>
-    /// The deadline requests cancellation; it does not forcibly stop code.
-    /// Normal completion is classified even if cancellation was requested
-    /// but ignored. The budget covers the operation, not result classification.
-    /// </para>
-    /// <para>
-    /// Classifier and logging exceptions are not classified as dependency failures.
-    /// Logging filters do not disable execution, classification, or timeout behavior.
-    /// </para>
-    /// <para>
-    /// This helper does not retry, cache results, choose fallback, change
-    /// application mode, or dispose resources returned by the operation.
-    /// Supply a fresh identifier when caller failure diagnostics need correlation.
-    /// </para>
-    /// </remarks>
     private static async Task<T> RunExternalCoreAsync<T>(
         ILogger logger,
         Func<CancellationToken, Task<T>> operationAsync,
