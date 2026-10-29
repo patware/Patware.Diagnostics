@@ -125,6 +125,8 @@ public sealed class CachedProductCatalog : IDisposable
 
         await _refreshGate.WaitAsync(stopping);
 
+        SimulatedServiceMode mode = Mode;
+
         try
         {
             string operationId = Guid.NewGuid().ToString("N");
@@ -136,64 +138,16 @@ public sealed class CachedProductCatalog : IDisposable
 
             try
             {
-                ProductServiceResult result = await SimulatedProductService.FetchAsync(Mode, request.Token);
+                IReadOnlyList<ProductPrice> result = await SimulatedProductService.FetchAsync(mode, request.Token);
 
                 stopping.ThrowIfCancellationRequested();
-
-                if (!result.IsSuccess)
-                {
-                    string failure;
-
-                    switch (result.Status)
-                    {
-                        case ProductServiceStatus.Unavailable:
-                            _logger.External.ServiceUnavailable(
-                                externalName: "ProductService",
-                                operationName: "FetchProducts",
-                                operationId: operationId,
-                                reasonCode: "ServiceUnavailable",
-                                exception: null);
-
-                            failure = "Product service reported unavailability";
-                            break;
-
-                        case ProductServiceStatus.AuthenticationRejected:
-                            _logger.External.AuthenticationFailed(
-                                externalName: "ProductService",
-                                operationName: "FetchProducts",
-                                operationId: operationId,
-                                reasonCode: "AuthenticationRejected",
-                                exception: null);
-
-                            failure = "Product service rejected application authentication";
-                            break;
-
-                        case ProductServiceStatus.AuthorizationDenied:
-                            _logger.External.AuthorizationFailed(
-                                externalName: "ProductService",
-                                operationName: "FetchProducts",
-                                operationId: operationId,
-                                reasonCode: "PermissionDenied",
-                                exception: null);
-
-                            failure = "Product service denied the application permission";
-                            break;
-
-                        default:
-                            throw new InvalidOperationException(
-                                $"Unexpected product-service result: {result.Status}.");
-                    }
-
-                    MarkDegraded(failure);
-                    return;
-                }
 
                 CatalogSnapshot previous = Snapshot;
 
                 Volatile.Write(
                     ref _snapshot,
                     new CatalogSnapshot(
-                        result.Products,
+                        result,
                         DateTimeOffset.UtcNow,
                         IsDegraded: false));
 
@@ -214,6 +168,45 @@ public sealed class CachedProductCatalog : IDisposable
                     exception: exception);
 
                 MarkDegraded("Product service timed out");
+            }
+            catch (SimulatedAuthenticationRejectedException)
+            {
+                stopping.ThrowIfCancellationRequested();
+
+                _logger.External.AuthenticationFailed(
+                    "ProductService",
+                    "FetchProducts",
+                    operationId,
+                    "AuthenticationRejected",
+                    null);
+
+                MarkDegraded("Product service rejected application authentication");
+            }
+            catch (SimulatedAuthorizationDeniedException)
+            {
+                stopping.ThrowIfCancellationRequested();
+
+                _logger.External.AuthorizationFailed(
+                    "ProductService",
+                    "FetchProducts",
+                    operationId,
+                    "PermissionDenied",
+                    null);
+
+                MarkDegraded("Product service denied the application permission");
+            }
+            catch (SimulatedServiceUnavailableException)
+            {
+                stopping.ThrowIfCancellationRequested();
+
+                _logger.External.ServiceUnavailable(
+                    "ProductService",
+                    "FetchProducts",
+                    operationId,
+                    "ServiceUnavailable",
+                    null);
+
+                MarkDegraded("Product service reported unavailability");
             }
         }
         finally

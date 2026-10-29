@@ -34,7 +34,7 @@ logger.Configuration.LoadFailed(@configurationName, @sourceName, @loadId, @reaso
 - `configurationName` (`string`): The non\-sensitive logical name of the configuration being loaded\.
 - `sourceName` (`string`): The non\-sensitive logical source name\. Do not include credentials, connection strings, or sensitive paths or addresses\.
 - `loadId` (`string`): The unique identifier of this loading attempt\. Use a new identifier for each retry or reload\.
-- `reasonCode` (`string`): A stable application\-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed\.
+- `reasonCode` (`string`): An application\-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed\.
 - `exception` (`Exception?`): The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged\.
 
 ## Remarks

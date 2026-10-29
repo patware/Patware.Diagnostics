@@ -561,7 +561,7 @@ public readonly struct ConfigurationEvents
     /// <param name="configurationName">The non-sensitive logical name of the configuration being loaded.</param>
     /// <param name="sourceName">The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses.</param>
     /// <param name="loadId">The unique identifier of this loading attempt. Use a new identifier for each retry or reload.</param>
-    /// <param name="reasonCode">A stable application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed.</param>
+    /// <param name="reasonCode">An application-defined failure classification, such as SourceNotFound, SourceAccessDenied, SourceReadFailed, or SourceParseFailed.</param>
     /// <param name="exception">The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged.</param>
     /// <remarks>
     /// <para>Emit when a required configuration-loading attempt fails during source access, reading, parsing, or deserialization.</para>
@@ -819,7 +819,7 @@ public readonly struct DependencyEvents
     /// <param name="dependencyName">The non-sensitive logical name of the component being resolved.</param>
     /// <param name="operationName">The non-sensitive logical operation requiring the component.</param>
     /// <param name="resolutionId">The unique identifier of this resolution attempt. Use a new identifier for each retry.</param>
-    /// <param name="reasonCode">A stable application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed.</param>
+    /// <param name="reasonCode">An application-defined classification, such as NotFound, LoadFailed, or ConstructionFailed.</param>
     /// <param name="exception">The original exception when appropriate for the logging destination, or null when no exception occurred or its details must not be logged.</param>
     /// <remarks>
     /// <para>Emit when an attempted component resolution cannot supply the requested component.</para>
@@ -925,8 +925,8 @@ public readonly struct ExternalEvents
     /// <summary>
     /// Indicates that an explicit attempt to establish a connection to an external dependency is beginning.
     /// </summary>
-    /// <param name="externalName">The stable logical dependency name, without credentials or sensitive addresses.</param>
-    /// <param name="operationName">The stable logical name of the explicit connection operation.</param>
+    /// <param name="externalName">The logical dependency name, without credentials or sensitive addresses.</param>
+    /// <param name="operationName">The logical name of the explicit connection operation.</param>
     /// <param name="operationId">The identifier of this connection attempt, shared with its outcome. Use a different identifier for each retry.</param>
     /// <remarks>
     /// <para>Emit immediately before invoking an API whose purpose is to establish or acquire a connection.</para>
@@ -963,7 +963,7 @@ public readonly struct ExternalEvents
     /// Possible failure outcome:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable">602 — External_ServiceUnavailable</see>.
     /// </para>
-    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// <para>Status: Stable. Introduced: 0.0.10.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -997,7 +997,7 @@ public readonly struct ExternalEvents
     /// Corresponding beginning:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
     /// </para>
-    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// <para>Status: Stable. Introduced: 0.0.10.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// This group was default-initialized rather than obtained through
@@ -1009,12 +1009,96 @@ public readonly struct ExternalEvents
     }
 
     /// <summary>
+    /// Indicates that an individual external operation attempt is beginning.
+    /// </summary>
+    /// <param name="externalName">The logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the external operation.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <remarks>
+    /// <para>Emit immediately before invoking the external operation.</para>
+    /// <para>Normal method return does not necessarily mean success.</para>
+    /// <para>Successful empty results can still be successful.</para>
+    /// <para>Success does not establish application recovery or guarantee future availability.</para>
+    /// <para>Timeouts do not establish that remote execution stopped.</para>
+    /// <para>Retries are separate attempts with new identifiers.</para>
+    /// <para>Cancellation and unclassified outcomes can leave 203 without a catalog outcome.</para>
+    /// <para>Neither event performs the operation or changes application state.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.CallCompleted">214 — External_CallCompleted</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed">502 — External_AuthenticationFailed</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed">503 — External_AuthorizationFailed</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut">601 — External_OperationTimedOut</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable">602 — External_ServiceUnavailable</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Calling(string @externalName, string @operationName, string @operationId)
+    {
+        ExternalEventMessages.Calling(Logger, @externalName, @operationName, @operationId);
+    }
+
+    /// <summary>
+    /// Indicates that an external operation delegate returned normally.
+    /// </summary>
+    /// <param name="externalName">The logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the external operation.</param>
+    /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
+    /// <remarks>
+    /// <para>Emit immediately after the operation returns normally, before interpreting or using its result.</para>
+    /// <para>Normal completion does not establish business success. The returned value may describe a rejection or other unsuccessful outcome.</para>
+    /// <para>An exception or observed cancellation prevents this completion event.</para>
+    /// <para>Use the same external name, operation name, and operation identifier as External_Calling.</para>
+    /// <para>This event does not establish application recovery or guarantee future dependency availability.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not perform the operation or inspect its result.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling">203 — External_Calling</see>.
+    /// </para>
+    /// <para>Status: Stable. Introduced: 0.0.11.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void CallCompleted(string @externalName, string @operationName, string @operationId)
+    {
+        ExternalEventMessages.CallCompleted(Logger, @externalName, @operationName, @operationId);
+    }
+
+    /// <summary>
     /// Reports that an external dependency rejected authentication for an operation attempt.
     /// </summary>
-    /// <param name="externalName">The stable logical dependency name, without credentials or request-specific data.</param>
-    /// <param name="operationName">The stable logical name of the operation whose authentication was rejected.</param>
+    /// <param name="externalName">The logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the operation whose authentication was rejected.</param>
     /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
-    /// <param name="reasonCode">A stable application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content.</param>
+    /// <param name="reasonCode">An application-defined classification, such as AuthenticationRejected. Do not include credentials, tokens, or raw response content.</param>
     /// <param name="exception">The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged.</param>
     /// <remarks>
     /// <para>Emit when the dependency result establishes an authentication rejection.</para>
@@ -1036,6 +1120,10 @@ public readonly struct ExternalEvents
     /// Beginning associated with this failure:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
     /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling">203 — External_Calling</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.7.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1050,10 +1138,10 @@ public readonly struct ExternalEvents
     /// <summary>
     /// Reports that an external dependency denied permission to perform an operation attempt.
     /// </summary>
-    /// <param name="externalName">The stable logical dependency name, without credentials or request-specific data.</param>
-    /// <param name="operationName">The stable logical name of the operation whose permission was denied.</param>
+    /// <param name="externalName">The logical dependency name, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the operation whose permission was denied.</param>
     /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
-    /// <param name="reasonCode">A stable application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content.</param>
+    /// <param name="reasonCode">An application-defined classification, such as PermissionDenied. Do not include identities, protected resource details, or raw response content.</param>
     /// <param name="exception">The original exception when appropriate for the configured logging destination, or null when no exception occurred or its details must not be logged.</param>
     /// <remarks>
     /// <para>Emit when the dependency result establishes an authorization denial.</para>
@@ -1076,6 +1164,10 @@ public readonly struct ExternalEvents
     /// Beginning associated with this failure:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
     /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling">203 — External_Calling</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.7.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1090,8 +1182,8 @@ public readonly struct ExternalEvents
     /// <summary>
     /// Reports an external operation attempt that failed to complete within its timeout budget.
     /// </summary>
-    /// <param name="externalName">The stable logical name of the external dependency, without credentials or request-specific data.</param>
-    /// <param name="operationName">The stable logical name of the operation that timed out.</param>
+    /// <param name="externalName">The logical name of the external dependency, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the operation that timed out.</param>
     /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
     /// <param name="timeoutMilliseconds">The configured timeout budget for this attempt, in milliseconds, rather than its measured elapsed duration.</param>
     /// <param name="exception">The original exception associated with the confirmed timeout.</param>
@@ -1117,6 +1209,10 @@ public readonly struct ExternalEvents
     /// Beginning associated with this failure:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
     /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling">203 — External_Calling</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.5.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -1135,10 +1231,10 @@ public readonly struct ExternalEvents
     /// <summary>
     /// Reports that an external dependency could not serve an operation because of an observed availability failure.
     /// </summary>
-    /// <param name="externalName">The stable logical name of the dependency, without credentials or request-specific data.</param>
-    /// <param name="operationName">The stable logical name of the operation the dependency could not serve.</param>
+    /// <param name="externalName">The logical name of the dependency, without credentials or request-specific data.</param>
+    /// <param name="operationName">The logical name of the operation the dependency could not serve.</param>
     /// <param name="operationId">The identifier of this individual operation attempt. Use a different identifier for each retry.</param>
-    /// <param name="reasonCode">A stable application-defined classification of the observed availability failure, such as ServiceUnavailable. Do not include response bodies or exception messages.</param>
+    /// <param name="reasonCode">An application-defined classification of the observed availability failure, such as ServiceUnavailable. Do not include response bodies or exception messages.</param>
     /// <param name="exception">The original exception associated with the availability failure, or null when the dependency returned an unavailable result without throwing.</param>
     /// <remarks>
     /// <para>Emit when the caller receives an explicit unavailable result or establishes that a dependency exception represents an availability failure.</para>
@@ -1161,6 +1257,10 @@ public readonly struct ExternalEvents
     /// <para>
     /// Beginning associated with this failure:
     /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting">201 — External_Connecting</see>.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling">203 — External_Calling</see>.
     /// </para>
     /// <para>Status: Stable. Introduced: 0.0.6.</para>
     /// </remarks>
@@ -1199,6 +1299,22 @@ internal static partial class ExternalEventMessages
         Level = LogLevel.Information,
         Message = "Connected to external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.")]
     internal static partial void Connected(
+        ILogger logger, string ExternalName, string OperationName, string OperationId);
+
+    [LoggerMessage(
+        EventId = 203,
+        EventName = "External_Calling",
+        Level = LogLevel.Information,
+        Message = "Calling external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.")]
+    internal static partial void Calling(
+        ILogger logger, string ExternalName, string OperationName, string OperationId);
+
+    [LoggerMessage(
+        EventId = 214,
+        EventName = "External_CallCompleted",
+        Level = LogLevel.Information,
+        Message = "External dependency {ExternalName} operation completed. Operation: {OperationName}. Attempt: {OperationId}.")]
+    internal static partial void CallCompleted(
         ILogger logger, string ExternalName, string OperationName, string OperationId);
 
     [LoggerMessage(

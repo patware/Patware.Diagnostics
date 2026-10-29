@@ -44,29 +44,12 @@ public sealed class Worker(
         string authenticationFilePath = Path.GetFullPath("authentication-failed.txt");
         string authorizationFilePath = Path.GetFullPath("authorization-denied.txt");
 
-        logger.LogInformation(
-            "For graceful shutdown, create {StopFilePath}",
-            stopFilePath);
-
-        logger.LogInformation(
-            "To simulate a fatal exception, create {ExceptionFilePath}",
-            exceptionFilePath);
-
-        logger.LogInformation(
-            "To simulate an unresponsive product service, create {DegradedFilePath}.",
-            degradedFilePath);
-
-        logger.LogInformation(
-            "To simulate immediate service unavailability, create {UnavailableFilePath}.",
-            unavailableFilePath);
-
-        logger.LogInformation(
-            "To reject application authentication, create {AuthenticationFilePath}.",
-            authenticationFilePath);
-
-        logger.LogInformation(
-            "To deny application permission, create {AuthorizationFilePath}.",
-            authorizationFilePath);
+        logger.LogInformation("For graceful shutdown, create {StopFilePath}", stopFilePath);
+        logger.LogInformation("To simulate a fatal exception, create {ExceptionFilePath}", exceptionFilePath);
+        logger.LogInformation("To simulate an unresponsive product service, create {DegradedFilePath}.", degradedFilePath);
+        logger.LogInformation("To simulate immediate service unavailability, create {UnavailableFilePath}.", unavailableFilePath);
+        logger.LogInformation("To reject application authentication, create {AuthenticationFilePath}.", authenticationFilePath);
+        logger.LogInformation("To deny application permission, create {AuthorizationFilePath}.", authorizationFilePath);
 
         logger.LogInformation(
             "Dependency switches are checked in this order: authentication-failed.txt, " +
@@ -143,66 +126,46 @@ public sealed class Worker(
         string operationId = Guid.NewGuid().ToString("N");
         TimeSpan timeoutBudget = TimeSpan.FromSeconds(2);
 
-        using CancellationTokenSource timeout = new(timeoutBudget);
-
-        using CancellationTokenSource request = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, timeout.Token);
-
         try
         {
 
-            ProductServiceResult result = await SimulatedProductService.FetchAsync(mode, request.Token);
+
+            // Minimal form:
+            // ------------------------
+            //  var result = await logger.RunExternalAsync(() => MyService.FetchAsync());
+            //
+            //  var result = await logger.RunExternalAsync(token => MyService.FetchAsync(token));
+            //
+            // To supply application cancellation:
+            // ------------------------
+            //  var result = await logger.RunExternalAsync(
+            //    token => MyService.FetchAsync(token),
+            //    cancellationToken: stoppingToken);
+            //
+            // The full observation:
+            // ------------------------
+            //  var result = await logger.RunExternalAsync(
+            //    operationAsync: token => SimulatedProductService.FetchAsync(mode, token),
+            //    externalName: "ProductService",
+            //    operationName: "FetchPrice",
+            //    cancellationToken: stoppingToken,
+            //    timeout: timeoutBudget,
+            //    operationId: operationId);
+
+            IReadOnlyList<ProductPrice> result = await logger.RunExternalAsync(
+                operationAsync: token =>
+                    SimulatedProductService.FetchAsync(mode, token),
+                externalName: "ProductService",
+                operationName: "FetchPrice",
+                operationId: operationId,
+                timeout: timeoutBudget,
+                cancellationToken: stoppingToken);
+
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            if (!result.IsSuccess)
-            {
-                string failure;
 
-                switch (result.Status)
-                {
-                    case ProductServiceStatus.Unavailable:
-                        logger.External.ServiceUnavailable(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "ServiceUnavailable",
-                            exception: null);
-
-                        failure = "Product service reported unavailability";
-                        break;
-
-                    case ProductServiceStatus.AuthenticationRejected:
-                        logger.External.AuthenticationFailed(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "AuthenticationRejected",
-                            exception: null);
-
-                        failure = "Product service rejected application authentication";
-                        break;
-
-                    case ProductServiceStatus.AuthorizationDenied:
-                        logger.External.AuthorizationFailed(
-                            externalName: "ProductService",
-                            operationName: "FetchPrice",
-                            operationId: operationId,
-                            reasonCode: "PermissionDenied",
-                            exception: null);
-
-                        failure = "Product service denied the application permission";
-                        break;
-
-                    default:
-                        throw new InvalidOperationException(
-                            $"Unexpected product-service result: {result.Status}.");
-                }
-
-                UseCachedPrice(failure);
-                return;
-            }
-
-            decimal price = result.Products
+            decimal price = result
                 .Single(product => product.Name == "Coffee")
                 .Price;
 
@@ -215,25 +178,54 @@ public sealed class Worker(
                 logger.Application.InNormalMode();
             }
 
-            logger.LogInformation(
-                "Fetched coffee price: {Price} CAD at {FetchedAt}",
-                price,
-                _cachedAt);
+            logger.LogInformation("Fetched coffee price: {Price} CAD at {FetchedAt}", price, _cachedAt);
         }
-        catch (OperationCanceledException exception)
-            when (timeout.IsCancellationRequested
-                  && !stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (!stoppingToken.IsCancellationRequested)
         {
+            UseCachedPrice("Product service request was canceled or timed out");
+        }
+        catch (SimulatedAuthenticationRejectedException)
+            when (!stoppingToken.IsCancellationRequested)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
 
-            logger.External.OperationTimedOut(
-                externalName: "ProductService",
-                operationName: "FetchPrice",
-                operationId: operationId,
-                timeoutMilliseconds: timeoutBudget.TotalMilliseconds,
-                exception: exception);
+            logger.External.AuthenticationFailed(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "AuthenticationRejected",
+                null);
 
+            UseCachedPrice("Product service rejected application authentication");
+        }
+        catch (SimulatedAuthorizationDeniedException)
+            when (!stoppingToken.IsCancellationRequested)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
 
-            UseCachedPrice("Product service timed out");
+            logger.External.AuthorizationFailed(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "PermissionDenied",
+                null);
+
+            UseCachedPrice("Product service denied the application permission");
+        }
+        catch (SimulatedServiceUnavailableException)
+            when (!stoppingToken.IsCancellationRequested)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
+
+            logger.External.ServiceUnavailable(
+                "ProductService",
+                "FetchPrice",
+                operationId,
+                "ServiceUnavailable",
+                null);
+
+            UseCachedPrice("Product service reported unavailability");
         }
     }
 
@@ -325,17 +317,12 @@ public sealed class Worker(
 
         if (_cachedPrice is decimal cachedPrice)
         {
-            logger.LogInformation(
-                "Refresh failed. Using cached coffee price: " +
-                "{Price} CAD, last refreshed at {FetchedAt}",
-                cachedPrice,
-                _cachedAt);
+            logger.LogInformation("Refresh failed. Using cached coffee price: {Price} CAD, last refreshed at {FetchedAt}", cachedPrice, _cachedAt);
         }
         else
         {
-            logger.LogInformation(
-                "Refresh failed. No cached price is available; " +
-                "waiting for a successful refresh.");
+            logger.LogInformation("Refresh failed. No cached price is available waiting for a successful refresh.");
         }
     }
+
 }

@@ -4,36 +4,40 @@ namespace SampleApplications.Shared;
 /// Simulates a product dependency for the sample applications.
 /// </summary>
 /// <remarks>
-/// This service owns no cache, operating mode, logger, or timeout policy.
-/// Callers select request behavior and supply cancellation. This keeps
-/// hosting concerns and diagnostic event emission visible in each sample.
+/// The service returns domain data and throws for simulated failures.
+/// It owns no logger, cache, timeout policy, or application operating mode.
 /// </remarks>
 public static class SimulatedProductService
 {
     /// <summary>
-    /// Fetches simulated product prices using the requested behavior.
+    /// Fetches prices using the behavior selected for this attempt.
     /// </summary>
-    /// <param name="mode">The behavior of this individual request.</param>
+    /// <param name="mode">The behavior captured when the request begins.</param>
     /// <param name="cancellationToken">
-    /// Cancellation supplied by the caller, including its timeout or shutdown.
+    /// Caller cancellation, including timeout and application shutdown.
     /// </param>
-    /// <returns>
-    /// A successful response containing Coffee, Tea, and Chocolate prices,
-    /// or an explicit unavailable, authentication-rejected, or authorization-denied
-    /// response.
-    /// </returns>
+    /// <returns>A read-only collection of product prices.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// The mode is not defined.
+    /// The requested mode is not defined.
+    /// </exception>
+    /// <exception cref="SimulatedAuthenticationRejectedException">
+    /// The selected mode rejects authentication.
+    /// </exception>
+    /// <exception cref="SimulatedAuthorizationDeniedException">
+    /// The selected mode denies permission.
+    /// </exception>
+    /// <exception cref="SimulatedServiceUnavailableException">
+    /// The selected mode reports unavailability.
     /// </exception>
     /// <exception cref="OperationCanceledException">
     /// Cancellation was requested.
     /// </exception>
     /// <remarks>
-    /// Immediate failure modes return normal results without exceptions.
-    /// Authentication and authorization modes represent the application calling
-    /// its dependency; they do not simulate authentication of a UI user.
+    /// Unresponsive mode waits for cancellation rather than implementing
+    /// its own deadline. Changing sample controls does not alter this
+    /// attempt's captured mode.
     /// </remarks>
-    public static async Task<ProductServiceResult> FetchAsync(SimulatedServiceMode mode, CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<ProductPrice>> FetchAsync(SimulatedServiceMode mode, CancellationToken cancellationToken)
     {
         if (!Enum.IsDefined(mode))
         {
@@ -44,24 +48,29 @@ public static class SimulatedProductService
 
         switch (mode)
         {
-            case SimulatedServiceMode.Unavailable: return ProductServiceResult.Unavailable;
-            case SimulatedServiceMode.AuthenticationRejected: return ProductServiceResult.AuthenticationRejected;
-            case SimulatedServiceMode.AuthorizationDenied: return ProductServiceResult.AuthorizationDenied;
-        }
+            case SimulatedServiceMode.AuthenticationRejected:
+                throw new SimulatedAuthenticationRejectedException();
 
-        if (mode == SimulatedServiceMode.Unresponsive)
-        {
-            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            case SimulatedServiceMode.AuthorizationDenied:
+                throw new SimulatedAuthorizationDeniedException();
+
+            case SimulatedServiceMode.Unavailable:
+                throw new SimulatedServiceUnavailableException();
+
+            case SimulatedServiceMode.Unresponsive:
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                break;
         }
 
         await Task.Delay(TimeSpan.FromMilliseconds(350), cancellationToken);
 
-        return ProductServiceResult.Success(
-            [
-                new ProductPrice("Coffee", NextPrice(12m)),
-                new ProductPrice("Tea", NextPrice(8m)),
-                new ProductPrice("Chocolate", NextPrice(5m))
-            ]);
+        return Array.AsReadOnly(
+            new ProductPrice[]
+            {
+                new("Coffee", NextPrice(12m)),
+                new("Tea", NextPrice(8m)),
+                new("Chocolate", NextPrice(5m))
+            });
     }
 
     private static decimal NextPrice(decimal minimum)

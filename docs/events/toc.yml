@@ -50,6 +50,10 @@ items:
     href: Event_201.md
   - name: 202 — External_Connected
     href: Event_202.md
+  - name: 203 — External_Calling
+    href: Event_203.md
+  - name: 214 — External_CallCompleted
+    href: Event_214.md
   - name: 502 — External_AuthenticationFailed
     href: Event_502.md
   - name: 503 — External_AuthorizationFailed

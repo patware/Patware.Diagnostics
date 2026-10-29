@@ -3,7 +3,21 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
-## 0.0.10 - Unpublished
+## 0.0.11 - Unpublished
+
+### Added
+
+- Events 203, `External_Calling`, and 214, `External_CallCompleted`,
+  describing individual external operation attempts.
+- RunExternalAsync overloads with optional operation names, correlation,
+  caller cancellation, and cooperative timeout cancellation.
+
+### Changed
+
+- Product-service samples return domain data and use explicit sample
+  exceptions for authentication, authorization, and availability failures.
+
+## 0.0.10 - 2026-10-25
 
 ### Added
 

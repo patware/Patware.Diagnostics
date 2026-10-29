@@ -13,6 +13,8 @@ Reports operations involving external dependencies\. Operation outcomes do not a
 | --- | --- | --- | --- | --- |
 | [201](Event_201.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [Connecting](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
 | [202](Event_202.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [Connected](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
+| [203](Event_203.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [Calling](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
+| [214](Event_214.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [CallCompleted](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.CallCompleted%28System.String%2CSystem.String%2CSystem.String%29) | OperationalInformation | Information |
 | [502](Event_502.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthenticationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [503](Event_503.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [AuthorizationFailed](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [601](Event_601.md) | [External](Category_External.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents) | [OperationTimedOut](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29) | Exceptional | Error |
@@ -43,6 +45,30 @@ flowchart LR
 
 - Beginning: [201 — External\_Connecting](Event_201.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connecting%28System.String%2CSystem.String%2CSystem.String%29)
 - Completion: [202 — External\_Connected](Event_202.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Connected%28System.String%2CSystem.String%2CSystem.String%29)
+- Failure: [502 — External\_AuthenticationFailed](Event_502.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+- Failure: [503 — External\_AuthorizationFailed](Event_503.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+- Failure: [601 — External\_OperationTimedOut](Event_601.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29)
+- Failure: [602 — External\_ServiceUnavailable](Event_602.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.ServiceUnavailable%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
+
+### 203 — 214
+
+```mermaid
+flowchart LR
+    event203["203 — External_Calling"]
+    event214["214 — External_CallCompleted"]
+    event203 --> event214
+    event502["502 — External_AuthenticationFailed"]
+    event203 -->|Failure| event502
+    event503["503 — External_AuthorizationFailed"]
+    event203 -->|Failure| event503
+    event601["601 — External_OperationTimedOut"]
+    event203 -->|Failure| event601
+    event602["602 — External_ServiceUnavailable"]
+    event203 -->|Failure| event602
+```
+
+- Beginning: [203 — External\_Calling](Event_203.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.Calling%28System.String%2CSystem.String%2CSystem.String%29)
+- Completion: [214 — External\_CallCompleted](Event_214.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.CallCompleted%28System.String%2CSystem.String%2CSystem.String%29)
 - Failure: [502 — External\_AuthenticationFailed](Event_502.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthenticationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
 - Failure: [503 — External\_AuthorizationFailed](Event_503.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.AuthorizationFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
 - Failure: [601 — External\_OperationTimedOut](Event_601.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ExternalEvents.OperationTimedOut%28System.String%2CSystem.String%2CSystem.String%2CSystem.Double%2CSystem.Exception%29)

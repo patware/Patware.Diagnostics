@@ -14,7 +14,7 @@ Indicates that an explicit connection operation completed successfully according
 | Event class | OperationalInformation |
 | Log level | Information |
 | Status | Stable |
-| Introduced | 0.0.11 |
+| Introduced | 0.0.10 |
 
 ## Usage
 

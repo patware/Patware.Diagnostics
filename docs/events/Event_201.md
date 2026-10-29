@@ -14,7 +14,7 @@ Indicates that an explicit attempt to establish a connection to an external depe
 | Event class | OperationalInformation |
 | Log level | Information |
 | Status | Stable |
-| Introduced | 0.0.11 |
+| Introduced | 0.0.10 |
 
 ## Usage
 
@@ -31,8 +31,8 @@ logger.External.Connecting(@externalName, @operationName, @operationId);
 
 ## Arguments
 
-- `externalName` (`string`): The stable logical dependency name, without credentials or sensitive addresses\.
-- `operationName` (`string`): The stable logical name of the explicit connection operation\.
+- `externalName` (`string`): The logical dependency name, without credentials or sensitive addresses\.
+- `operationName` (`string`): The logical name of the explicit connection operation\.
 - `operationId` (`string`): The identifier of this connection attempt, shared with its outcome\. Use a different identifier for each retry\.
 
 ## Remarks
