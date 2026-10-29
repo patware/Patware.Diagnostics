@@ -434,7 +434,7 @@ internal static partial class ApplicationEventMessages
 }
 
 /// <summary>
-/// Reports configuration loading failures, validation attempts, and individual setting results. Successful validation does not imply that a candidate has been applied.
+/// Reports configuration loading attempts, validation attempts, and individual setting results. Successful loading does not imply validation, and successful validation does not imply that a candidate has been applied.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -461,6 +461,45 @@ public readonly struct ConfigurationEvents
     private ILogger Logger =>
         _logger ?? throw new InvalidOperationException(
             "Obtain this event group through a logger's Configuration property.");
+
+    /// <summary>
+    /// Reports that an attempt to obtain a configuration candidate is beginning.
+    /// </summary>
+    /// <param name="configurationName">The non-sensitive logical name of the configuration being loaded.</param>
+    /// <param name="sourceName">The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses.</param>
+    /// <param name="loadId">The unique identifier of this loading attempt. Use a new identifier for each retry or reload.</param>
+    /// <remarks>
+    /// <para>Emit immediately before beginning source access, reading, parsing, or deserialization for a configuration-loading attempt.</para>
+    /// <para>Use the same ConfigurationName, SourceName, and LoadId for the beginning and outcome of one loading attempt.</para>
+    /// <para>A successfully obtained candidate is reported through Configuration_Loaded. A required loading attempt that fails before obtaining a candidate is reported through Configuration_LoadFailed.</para>
+    /// <para>Cancellation, process termination, filtering, or collection loss can leave a beginning record without an observed outcome. A missing outcome does not by itself prove failure.</para>
+    /// <para>A missing optional source is not automatically a loading failure. If no candidate is obtained, do not report Configuration_Loaded merely because the absence is acceptable.</para>
+    /// <para>LoadId identifies a loading attempt. ValidationId identifies a validation attempt. Use a logging scope or trace when correlation across these phases is required.</para>
+    /// <para>Names must be non-sensitive. The library does not redact caller-supplied text.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not load configuration, start a timer, retain attempt state, or emit an outcome automatically.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding completion:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loaded">120 — Configuration_Loaded</see>.
+    /// </para>
+    /// <para>
+    /// Possible failure outcome:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.LoadFailed">501 — Configuration_LoadFailed</see>.
+    /// </para>
+    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Loading(string @configurationName, string @sourceName, string @loadId)
+    {
+        ConfigurationEventMessages.Loading(Logger, @configurationName, @sourceName, @loadId);
+    }
 
     /// <summary>
     /// Indicates that validation of a candidate configuration is beginning.
@@ -556,6 +595,41 @@ public readonly struct ConfigurationEvents
     }
 
     /// <summary>
+    /// Reports that a configuration candidate was successfully obtained for validation.
+    /// </summary>
+    /// <param name="configurationName">The non-sensitive logical name of the configuration being loaded.</param>
+    /// <param name="sourceName">The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses.</param>
+    /// <param name="loadId">The identifier of the successfully completed loading attempt.</param>
+    /// <remarks>
+    /// <para>Emit after source access, reading, and any required parsing or deserialization successfully produce a candidate, before evaluating application validation rules.</para>
+    /// <para>Use the same ConfigurationName, SourceName, and LoadId as the corresponding Configuration_Loading event.</para>
+    /// <para>Successful loading establishes that a candidate was obtained. It does not establish that the candidate is valid, has been applied, or is currently active.</para>
+    /// <para>Loading succeeds even when subsequent application validation rejects the candidate. Report that rejection through the configuration-validation events.</para>
+    /// <para>Do not emit this event when parsing or deserialization fails, when loading is cancelled, or when an optional source is absent and no candidate is obtained.</para>
+    /// <para>A successful load after an earlier failure does not by itself establish application recovery or a change in operating mode.</para>
+    /// <para>Names must be non-sensitive. Configuration contents are deliberately excluded from the event contract.</para>
+    /// <para>Calling this method only emits a diagnostic record. It does not validate or apply configuration, replace active settings, or change application mode.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Corresponding beginning:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loading">109 — Configuration_Loading</see>.
+    /// </para>
+    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void Loaded(string @configurationName, string @sourceName, string @loadId)
+    {
+        ConfigurationEventMessages.Loaded(Logger, @configurationName, @sourceName, @loadId);
+    }
+
+    /// <summary>
     /// Reports that an attempt to load configuration failed before a candidate could be obtained for validation.
     /// </summary>
     /// <param name="configurationName">The non-sensitive logical name of the configuration being loaded.</param>
@@ -577,6 +651,15 @@ public readonly struct ConfigurationEvents
     /// <para>Cancellation and application shutdown are not configuration-loading failures.</para>
     /// <para>Report once at the boundary responsible for the loading attempt. Avoid reporting the same failure again at each calling layer.</para>
     /// <para>Calling this method only emits a diagnostic record. It does not load configuration, retry, reject a candidate, replace active settings, change application mode, or initiate shutdown.</para>
+    /// <para>
+    /// Relationships describe expected progression for the same application
+    /// instance. Unrelated records may occur between related events.
+    /// Missing records do not by themselves prove a failed transition.
+    /// </para>
+    /// <para>
+    /// Beginning associated with this failure:
+    /// <see cref="Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loading">109 — Configuration_Loading</see>.
+    /// </para>
     /// <para>Status: Stable. Introduced: 0.0.8.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
@@ -663,6 +746,14 @@ public readonly struct ConfigurationEvents
 internal static partial class ConfigurationEventMessages
 {
     [LoggerMessage(
+        EventId = 109,
+        EventName = "Configuration_Loading",
+        Level = LogLevel.Information,
+        Message = "Loading configuration. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}.")]
+    internal static partial void Loading(
+        ILogger logger, string ConfigurationName, string SourceName, string LoadId);
+
+    [LoggerMessage(
         EventId = 110,
         EventName = "Configuration_Validating",
         Level = LogLevel.Information,
@@ -685,6 +776,14 @@ internal static partial class ConfigurationEventMessages
         Message = "Configuration {ConfigurationName} passed validation. Validation: {ValidationId}.")]
     internal static partial void Validated(
         ILogger logger, string ConfigurationName, string ValidationId);
+
+    [LoggerMessage(
+        EventId = 120,
+        EventName = "Configuration_Loaded",
+        Level = LogLevel.Information,
+        Message = "Configuration loaded. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}.")]
+    internal static partial void Loaded(
+        ILogger logger, string ConfigurationName, string SourceName, string LoadId);
 
     [LoggerMessage(
         EventId = 501,

@@ -2,7 +2,7 @@
 
 # Configuration events
 
-Reports configuration loading failures, validation attempts, and individual setting results\. Successful validation does not imply that a candidate has been applied\.
+Reports configuration loading attempts, validation attempts, and individual setting results\. Successful loading does not imply validation, and successful validation does not imply that a candidate has been applied\.
 
 [All events](index.md) · [Category API reference](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents)
 
@@ -18,9 +18,11 @@ events and failure paths beyond the beginning/completion relationships.
 
 | EventId | Category | Method | EventClass | LogLevel |
 | --- | --- | --- | --- | --- |
+| [109](Event_109.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [Loading](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loading%28System.String%2CSystem.String%2CSystem.String%29) | LowLevel | Information |
 | [110](Event_110.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [Validating](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validating%28System.String%2CSystem.String%29) | LowLevel | Information |
 | [111](Event_111.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [ValueIsValid](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.ValueIsValid%28System.String%2CSystem.String%2CSystem.String%29) | LowLevel | Information |
 | [112](Event_112.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [Validated](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Validated%28System.String%2CSystem.String%29) | LowLevel | Information |
+| [120](Event_120.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [Loaded](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loaded%28System.String%2CSystem.String%2CSystem.String%29) | LowLevel | Information |
 | [501](Event_501.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [LoadFailed](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.LoadFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29) | UnrecoverableWarning | Warning |
 | [506](Event_506.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [ValueIsInvalid](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.ValueIsInvalid%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%29) | UnrecoverableWarning | Warning |
 | [507](Event_507.md) | [Configuration](Category_Configuration.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents) | [ValidationFailed](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.ValidationFailed%28System.String%2CSystem.String%2CSystem.String%29) | UnrecoverableWarning | Warning |
@@ -30,6 +32,21 @@ events and failure paths beyond the beginning/completion relationships.
 These diagrams show the beginning, completion, and failure outcomes
 explicitly declared in the catalog. Optional detail events and other
 category events may not participate.
+
+### 109 — 120
+
+```mermaid
+flowchart LR
+    event109["109 — Configuration_Loading"]
+    event120["120 — Configuration_Loaded"]
+    event109 --> event120
+    event501["501 — Configuration_LoadFailed"]
+    event109 -->|Failure| event501
+```
+
+- Beginning: [109 — Configuration\_Loading](Event_109.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loading%28System.String%2CSystem.String%2CSystem.String%29)
+- Completion: [120 — Configuration\_Loaded](Event_120.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loaded%28System.String%2CSystem.String%2CSystem.String%29)
+- Failure: [501 — Configuration\_LoadFailed](Event_501.md) · [API](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.LoadFailed%28System.String%2CSystem.String%2CSystem.String%2CSystem.String%2CSystem.Exception%29)
 
 ### 110 — 112
 

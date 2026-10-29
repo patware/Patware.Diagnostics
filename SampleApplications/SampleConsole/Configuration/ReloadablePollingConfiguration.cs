@@ -69,6 +69,8 @@ internal sealed class ReloadablePollingConfiguration
         string loadId = Guid.NewGuid().ToString("N");
         PollingSettings candidate;
 
+        _logger.Configuration.Loading(ConfigurationName, SourceName, loadId);
+
         try
         {
             string json = File.ReadAllText(SourcePath);
@@ -110,6 +112,8 @@ internal sealed class ReloadablePollingConfiguration
 
             return false;
         }
+
+        _logger.Configuration.Loaded(ConfigurationName, SourceName, loadId);
 
         string validationId = Guid.NewGuid().ToString("N");
 

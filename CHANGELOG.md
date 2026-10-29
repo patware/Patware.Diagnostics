@@ -3,6 +3,22 @@
 User-visible changes are recorded here. `VERSION` is the current build version;
 published releases are identified by package and release date below.
 
+## 0.0.12 - Unpublished
+
+### Added
+
+- Events 109, `Configuration_Loading`, and 120, `Configuration_Loaded`,
+  describing the beginning and successful completion of configuration-loading
+  attempts, correlated with existing failure event 501 through `LoadId`.
+- Configuration-loading event demonstrations in SampleConsole and contract
+  tests covering event identity, structured properties, filtering, and
+  independent attempts.
+
+### Changed
+
+- Updated configuration-loading guidance to distinguish loading success from
+  validation and activation, with complete sample event sequences.
+
 ## 0.0.11 - 2026-10-29
 
 ### Added
