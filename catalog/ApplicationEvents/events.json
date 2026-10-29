@@ -1,4 +1,3 @@
-
 {
   "$schema": "./events.schema.json",
   "Categories": {
@@ -8,7 +7,7 @@
     },
     "Configuration": {
       "Name": "Configuration",
-      "Summary": "Reports configuration loading failures, validation attempts, and individual setting results. Successful validation does not imply that a candidate has been applied.",
+      "Summary": "Reports configuration loading attempts, validation attempts, and individual setting results. Successful loading does not imply validation, and successful validation does not imply that a candidate has been applied.",
       "Guides": [
         {
           "Title": "Configuration loading and validation",
@@ -116,6 +115,45 @@
       ],
       "Status": "Stable",
       "Since": "0.0.1"
+    },
+    "109": {
+      "EventId": 109,
+      "EventName": "Configuration_Loading",
+      "Category": "Configuration",
+      "Method": "Loading",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Loading configuration. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the configuration being loaded."
+        },
+        {
+          "Name": "sourceName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses."
+        },
+        {
+          "Name": "loadId",
+          "ValueType": "string",
+          "Summary": "The unique identifier of this loading attempt. Use a new identifier for each retry or reload."
+        }
+      ],
+      "Summary": "Reports that an attempt to obtain a configuration candidate is beginning.",
+      "Trigger": "Emit immediately before beginning source access, reading, parsing, or deserialization for a configuration-loading attempt.",
+      "Remarks": [
+        "Use the same ConfigurationName, SourceName, and LoadId for the beginning and outcome of one loading attempt.",
+        "A successfully obtained candidate is reported through Configuration_Loaded. A required loading attempt that fails before obtaining a candidate is reported through Configuration_LoadFailed.",
+        "Cancellation, process termination, filtering, or collection loss can leave a beginning record without an observed outcome. A missing outcome does not by itself prove failure.",
+        "A missing optional source is not automatically a loading failure. If no candidate is obtained, do not report Configuration_Loaded merely because the absence is acceptable.",
+        "LoadId identifies a loading attempt. ValidationId identifies a validation attempt. Use a logging scope or trace when correlation across these phases is required.",
+        "Names must be non-sensitive. The library does not redact caller-supplied text.",
+        "Calling this method only emits a diagnostic record. It does not load configuration, start a timer, retain attempt state, or emit an outcome automatically."
+      ],
+      "Status": "Proposed",
+      "Since": null
     },
     "110": {
       "EventId": 110,
@@ -295,6 +333,45 @@
       "Status": "Stable",
       "Since": "0.0.10"
     },
+    "120": {
+      "EventId": 120,
+      "EventName": "Configuration_Loaded",
+      "Category": "Configuration",
+      "Method": "Loaded",
+      "EventClass": "LowLevel",
+      "LogLevel": "Information",
+      "Message": "Configuration loaded. Configuration: {ConfigurationName}. Source: {SourceName}. Load: {LoadId}.",
+      "Arguments": [
+        {
+          "Name": "configurationName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical name of the configuration being loaded."
+        },
+        {
+          "Name": "sourceName",
+          "ValueType": "string",
+          "Summary": "The non-sensitive logical source name. Do not include credentials, connection strings, or sensitive paths or addresses."
+        },
+        {
+          "Name": "loadId",
+          "ValueType": "string",
+          "Summary": "The identifier of the successfully completed loading attempt."
+        }
+      ],
+      "Summary": "Reports that a configuration candidate was successfully obtained for validation.",
+      "Trigger": "Emit after source access, reading, and any required parsing or deserialization successfully produce a candidate, before evaluating application validation rules.",
+      "Remarks": [
+        "Use the same ConfigurationName, SourceName, and LoadId as the corresponding Configuration_Loading event.",
+        "Successful loading establishes that a candidate was obtained. It does not establish that the candidate is valid, has been applied, or is currently active.",
+        "Loading succeeds even when subsequent application validation rejects the candidate. Report that rejection through the configuration-validation events.",
+        "Do not emit this event when parsing or deserialization fails, when loading is cancelled, or when an optional source is absent and no candidate is obtained.",
+        "A successful load after an earlier failure does not by itself establish application recovery or a change in operating mode.",
+        "Names must be non-sensitive. Configuration contents are deliberately excluded from the event contract.",
+        "Calling this method only emits a diagnostic record. It does not validate or apply configuration, replace active settings, or change application mode."
+      ],
+      "Status": "Proposed",
+      "Since": null
+    },
     "201": {
       "EventId": 201,
       "EventName": "External_Connecting",
@@ -376,9 +453,9 @@
     "203": {
       "EventId": 203,
       "EventName": "External_Calling",
-      "Category" : "External",
-      "Method" : "Calling",
-      "EventClass" : "OperationalInformation",
+      "Category": "External",
+      "Method": "Calling",
+      "EventClass": "OperationalInformation",
       "LogLevel": "Information",
       "Message": "Calling external dependency {ExternalName}. Operation: {OperationName}. Attempt: {OperationId}.",
       "Arguments": [
@@ -409,8 +486,8 @@
         "Cancellation and unclassified outcomes can leave 203 without a catalog outcome.",
         "Neither event performs the operation or changes application state."
       ],
-      "Status" : "Stable",
-      "Since" : "0.0.11"
+      "Status": "Stable",
+      "Since": "0.0.11"
     },
     "204": {
       "EventId": 204,
@@ -437,9 +514,9 @@
     "214": {
       "EventId": 214,
       "EventName": "External_CallCompleted",
-      "Category" : "External",
-      "Method" : "CallCompleted",
-      "EventClass" : "OperationalInformation",
+      "Category": "External",
+      "Method": "CallCompleted",
+      "EventClass": "OperationalInformation",
       "Message": "External dependency {ExternalName} operation completed. Operation: {OperationName}. Attempt: {OperationId}.",
       "Arguments": [
         {
@@ -468,8 +545,8 @@
         "Calling this method only emits a diagnostic record. It does not perform the operation or inspect its result."
       ],
       "LogLevel": "Information",
-      "Status" : "Stable",
-      "Since" : "0.0.11"
+      "Status": "Stable",
+      "Since": "0.0.11"
     },
     "401": {
       "EventId": 401,
@@ -1012,6 +1089,11 @@
           "601",
           "602"
         ]
+      },
+      {
+        "Ing": "109",
+        "Ed": "120",
+        "Fails": ["501"]
       }
     ],
     "Lifecycle": [

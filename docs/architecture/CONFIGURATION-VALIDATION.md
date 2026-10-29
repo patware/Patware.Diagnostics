@@ -20,9 +20,11 @@ using Patware.Diagnostics.ApplicationEvents;
 
 | ID | Event | Level | Meaning |
 |---|---|---|---|
+| [109](../events/Event_109.md) | Configuration_Loading | Information | A loading attempt begins. |
 | [110](../events/Event_110.md) | Configuration_Validating | Information | A validation attempt begins. |
 | [111](../events/Event_111.md) | Configuration_ValueIsValid | Information | One setting passed its applicable checks. |
 | [112](../events/Event_112.md) | Configuration_Validated | Information | The candidate passed all required checks. |
+| [120](../events/Event_120.md) | Configuration_Loaded | Information | Loading produced a candidate; validation and application have not been established. |
 | [501](../events/Event_501.md) | Configuration_LoadFailed | Warning | Loading failed before a candidate could be obtained for validation. |
 | [506](../events/Event_506.md) | Configuration_ValueIsInvalid | Warning | A setting failed a validation rule. |
 | [507](../events/Event_507.md) | Configuration_ValidationFailed | Warning | Validation concluded that the candidate is invalid. |
@@ -38,8 +40,10 @@ that was successfully loaded.
 
 ```mermaid
 flowchart TD
+    loading["109 · Loading"]
     load["Read and deserialize required configuration"]
 
+    loaded["120 · Loaded"]
     loadFailed["501 · LoadFailed"]
     start["110 · Validating"]
     checks["Evaluate a consistent candidate<br/>Optional detail records:<br/>111 · ValueIsValid<br/>506 · ValueIsInvalid"]
@@ -51,8 +55,10 @@ flowchart TD
     apply["Application decides whether and how<br/>to apply the validated candidate"]
     interrupted["Interrupted attempt<br/>No inferred failure outcome"]
 
+    loading --> load
     load -->|Loading failed| loadFailed
-    load -->|Candidate obtained| start
+    load -->|Candidate obtained| loaded
+    loaded --> start
     load -->|Cancelled| interrupted
 
     start --> checks
@@ -66,8 +72,19 @@ flowchart TD
     valid --> apply
 ```
 
-The diagram illustrates an application workflow. It does not define an
-additional mandatory catalog relationship between 501 and 110.
+The catalog relates loading beginning 109 to success 120 or failure 501.
+The transition from successful loading to validation illustrates this
+application workflow; it is not an additional mandatory catalog relationship.
+
+### Loading beginning and success
+
+Emit 109 immediately before beginning source access. Emit 120 after reading
+and any required parsing or deserialization produce a candidate, before
+evaluating application validation rules.
+
+A candidate can load successfully and subsequently fail validation. Event 120
+does not establish that settings are valid, applied, or currently active.
+The event methods do not perform loading or infer its outcome.
 
 ### Loading failure
 
@@ -77,7 +94,8 @@ reading, parsing, or deserialization.
 Examples include a missing required source, denied file access, malformed
 JSON, or a representation that cannot be deserialized into the candidate type.
 
-A missing optional source is not automatically a loading failure.
+A missing optional source is not automatically a loading failure. If no
+candidate is obtained, do not emit 120 merely because the absence is acceptable.
 
 If no candidate was obtained, validation need not begin. Do not emit 506 or
 507 merely because loading failed.
@@ -102,8 +120,8 @@ validation could not complete.
 ## Correlating attempts
 
 Use a new `LoadId` for each loading attempt, including retries and reloads.
-Event 501 includes the logical `ConfigurationName` and `SourceName` together
-with that identifier.
+Supply the same logical `ConfigurationName`, `SourceName`, and `LoadId` on
+109 and its outcome, 120 or 501.
 
 Use a new `ValidationId` for each validation attempt. Supply the same
 `ConfigurationName` and `ValidationId` on its beginning, detail, and
@@ -128,11 +146,14 @@ additional correlation.
 Monitoring should include the application instance and logical configuration
 name when correlating records. Concurrent attempts can interleave.
 
-There is currently no standard loading-start or loading-success event.
-A 501 record therefore does not require a matching loading-completion record.
+For a required loading attempt that reaches an outcome, emit 120 when a
+candidate is obtained or 501 when loading fails. Do not emit both for the
+same attempt. Cancellation or an absent optional source can leave 109 without
+either outcome; neither condition alone establishes a loading failure.
 
-Missing validation outcomes can reflect interruption, filtering, collection
-loss, or abrupt termination. Alert deadlines belong to monitoring policy.
+Missing loading or validation outcomes can reflect interruption, filtering,
+collection loss, or abrupt termination. Missing records do not by themselves
+prove failure. Alert deadlines belong to monitoring policy.
 
 ## Active configuration, application, and recovery
 
@@ -141,6 +162,8 @@ describes the settings the application is currently using.
 
 | Observation | What it establishes | What it does not establish |
 |---|---|---|
+| 109 | A loading attempt began. | A candidate was obtained. |
+| 120 | Loading produced a candidate. | The candidate is valid, applied, or currently active. |
 | 501 | A loading attempt failed before obtaining a candidate. | The application has no working settings. |
 | 506 | A setting failed a validation rule. | The whole evaluation has concluded. |
 | 507 | Validation concluded that the candidate is invalid. | Existing settings were discarded or the application stopped. |
@@ -155,7 +178,8 @@ Applying a candidate is a separate operation. These events do not report
 whether replacing the active settings succeeded. Event 112 must not be
 treated as proof that the active configuration changed.
 
-A later successful validation does not automatically represent recovery.
+A later successful load or validation does not automatically represent recovery.
+Event 120 completes its own loading attempt, not an earlier failed attempt.
 Event 111 is not a completion event for 506, and 112 is not a recovery event
 for 501.
 
@@ -195,8 +219,9 @@ Names, source identifiers, and reasons must also be non-sensitive.
 The library does not redact caller-supplied text.
 
 A Warning minimum level retains 501, 506, and 507 while suppressing
-110, 111, and 112. Monitoring that expects complete validation sequences
-must retain Information-level records for the emitting logger category.
+109, 110, 111, 112, and 120. Monitoring that expects complete loading and
+validation sequences must retain Information-level records for the emitting
+logger category.
 
 Event 501 accepts a nullable exception. The application decides whether
 exception details are appropriate for its logging destination.
@@ -230,11 +255,11 @@ The supported interval is 50 through 1000 milliseconds.
 
 | Action, followed by R | Expected events | Active settings |
 |---|---|---|
-| Save valid JSON with interval 250 | 110 → 111 → 112 | Replaced with 250 ms |
-| Empty the file or make its JSON malformed | 501 | Retained |
-| Save valid JSON with interval 0 | 110 → 506 → 507 | Retained |
-| Rename the required file | 501 with SourceNotFound | Retained |
-| Restore valid JSON | 110 → 111 → 112 | Replaced |
+| Save valid JSON with interval 250 | 109 → 120 → 110 → 111 → 112 | Replaced with 250 ms |
+| Empty the file or make its JSON malformed | 109 → 501 | Retained |
+| Save valid JSON with interval 0 | 109 → 120 → 110 → 506 → 507 | Retained |
+| Rename the required file | 109 → 501 with SourceNotFound | Retained |
+| Restore valid JSON | 109 → 120 → 110 → 111 → 112 | Replaced |
 
 The sample starts with a valid built-in 100 ms fallback. If its initial
 loading attempt fails, that fallback remains active.

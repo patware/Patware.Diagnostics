@@ -29,6 +29,12 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_104.md) · [Application category](../events/Category_Application.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.Stopped)
 
+<a id="event-109"></a>
+
+## 109 — Configuration_Loading
+
+[Event documentation](../events/Event_109.md) · [Configuration category](../events/Category_Configuration.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loading%28System.String%2CSystem.String%2CSystem.String%29)
+
 <a id="event-110"></a>
 
 ## 110 — Configuration_Validating
@@ -58,6 +64,12 @@ These anchors preserve previously shared event links.
 ## 116 — Dependency_Resolved
 
 [Event documentation](../events/Event_116.md) · [Dependency category](../events/Category_Dependency.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.DependencyEvents.Resolved%28System.String%2CSystem.String%2CSystem.String%29)
+
+<a id="event-120"></a>
+
+## 120 — Configuration_Loaded
+
+[Event documentation](../events/Event_120.md) · [Configuration category](../events/Category_Configuration.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ConfigurationEvents.Loaded%28System.String%2CSystem.String%2CSystem.String%29)
 
 <a id="event-201"></a>
 
