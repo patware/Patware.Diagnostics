@@ -85,6 +85,26 @@ public static class LoggerEventCategories
         }
 
         /// <summary>
+        /// Gets the Diagnostics event group.
+        /// </summary>
+        /// <remarks>
+        /// The returned value retains the original logger.
+        /// Accessing this property neither emits an event nor changes
+        /// the logger's category, configuration, or providers.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// The logger is null.
+        /// </exception>
+        public DiagnosticsEvents Diagnostics
+        {
+            get
+            {
+                ArgumentNullException.ThrowIfNull(logger);
+                return new DiagnosticsEvents(logger);
+            }
+        }
+
+        /// <summary>
         /// Gets the External event group.
         /// </summary>
         /// <remarks>
@@ -989,6 +1009,79 @@ internal static partial class DependencyEventMessages
         Message = "Dependency resolution failed. Dependency: {DependencyName}. Operation: {OperationName}. Resolution: {ResolutionId}. Reason: {ReasonCode}.")]
     internal static partial void ResolutionFailed(
         ILogger logger, string DependencyName, string OperationName, string ResolutionId, string ReasonCode, Exception? Exception);
+
+}
+
+/// <summary>
+/// Explicit diagnostic events, including the traditional teapot novelty event.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Obtain this group through the logger's Diagnostics property.
+/// </para>
+/// <para>
+/// This value type groups related events without allocating a separate
+/// category object on the managed heap for each property access.
+/// </para>
+/// <para>
+/// These methods emit events when explicitly called. They do not
+/// observe or perform lifecycle transitions automatically.
+/// </para>
+/// </remarks>
+public readonly struct DiagnosticsEvents
+{
+    private readonly ILogger? _logger;
+
+    internal DiagnosticsEvents(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    private ILogger Logger =>
+        _logger ?? throw new InvalidOperationException(
+            "Obtain this event group through a logger's Diagnostics property.");
+
+    /// <summary>
+    /// Emits the traditional teapot novelty event.
+    /// </summary>
+    /// <remarks>
+    /// <para>Emit when application code explicitly requests the teapot Easter egg.</para>
+    /// <para>This event is a deliberate homage to the familiar 418 teapot response.</para>
+    /// <para>The numeric identifier places it in the RecoverableWarning range, but this novelty event is informational and does not indicate an operational problem.</para>
+    /// <para>Calling this method does not change application mode, indicate degraded operation, or require a recovery event.</para>
+    /// <para>This is an application log event, not an HTTP response. Calling it does not set an HTTP status code.</para>
+    /// <para>The method emits one record per explicit call. It does not run automatically during startup or health checks.</para>
+    /// <para>No administrator intervention is required. Coffee remains unavailable.</para>
+    /// <para>Status: Proposed. Introduced: Unpublished.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// This group was default-initialized rather than obtained through
+    /// a logger's category property.
+    /// </exception>
+    public void ImaTeapot()
+    {
+        DiagnosticsEventMessages.ImaTeapot(Logger);
+    }
+
+}
+
+/// <summary>
+/// Implements Diagnostics event emission using generated logging methods.
+/// </summary>
+/// <remarks>
+/// Keeping these methods internal prevents implementation details from
+/// appearing in the public logger API. Microsoft supplies their bodies
+/// through logging source generation.
+/// </remarks>
+internal static partial class DiagnosticsEventMessages
+{
+    [LoggerMessage(
+        EventId = 418,
+        EventName = "Diagnostics_ImaTeapot",
+        Level = LogLevel.Information,
+        Message = "I'm a teapot.")]
+    internal static partial void ImaTeapot(
+        ILogger logger);
 
 }
 

@@ -47,6 +47,11 @@ items:
     href: Event_116.md
   - name: 504 — Dependency_ResolutionFailed
     href: Event_504.md
+- name: Diagnostics
+  href: Category_Diagnostics.md
+  items:
+  - name: 418 — Diagnostics_ImaTeapot
+    href: Event_418.md
 - name: External
   href: Category_External.md
   items:

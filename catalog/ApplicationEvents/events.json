@@ -28,6 +28,10 @@
           "Path": "architecture/DEPENDENCY-RESOLUTION.md"
         }
       ]
+    },
+    "Diagnostics": {
+      "Name": "Diagnostics",
+      "Summary": "Explicit diagnostic events, including the traditional teapot novelty event."
     }
   },
   "Ids": {
@@ -576,6 +580,28 @@
       ],
       "Status": "Stable",
       "Since": "0.0.3"
+    },
+    "418": {
+      "EventId": 418,
+      "EventName": "Diagnostics_ImaTeapot",
+      "Category": "Diagnostics",
+      "Method": "ImaTeapot",
+      "EventClass": "RecoverableWarning",
+      "LogLevel": "Information",
+      "Message": "I'm a teapot.",
+      "Arguments": [],
+      "Summary": "Emits the traditional teapot novelty event.",
+      "Trigger": "Emit when application code explicitly requests the teapot Easter egg.",
+      "Remarks": [
+        "This event is a deliberate homage to the familiar 418 teapot response.",
+        "The numeric identifier places it in the RecoverableWarning range, but this novelty event is informational and does not indicate an operational problem.",
+        "Calling this method does not change application mode, indicate degraded operation, or require a recovery event.",
+        "This is an application log event, not an HTTP response. Calling it does not set an HTTP status code.",
+        "The method emits one record per explicit call. It does not run automatically during startup or health checks.",
+        "No administrator intervention is required. Coffee remains unavailable."
+      ],
+      "Status": "Proposed",
+      "Since": null
     },
     "501": {
       "EventId": 501,
