@@ -107,6 +107,12 @@ These anchors preserve previously shared event links.
 
 [Event documentation](../events/Event_401.md) · [Application category](../events/Category_Application.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.ApplicationEvents.InDegradedMode%28System.String%29)
 
+<a id="event-418"></a>
+
+## 418 — Diagnostics_ImaTeapot
+
+[Event documentation](../events/Event_418.md) · [Diagnostics category](../events/Category_Diagnostics.md) · [API reference](xref:Patware.Diagnostics.ApplicationEvents.DiagnosticsEvents.ImaTeapot)
+
 <a id="event-501"></a>
 
 ## 501 — Configuration_LoadFailed

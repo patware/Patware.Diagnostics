@@ -141,6 +141,7 @@ Console.WriteLine($"Active polling interval: {pollingConfiguration.Current.Polli
 Console.WriteLine("  R       Reload polling configuration");
 Console.WriteLine("  E       Connect to the WebSocket Echo service");
 Console.WriteLine("  G       Generate a report - simulate unresolved DI");
+Console.WriteLine("  T       Request coffee from a teapot");
 Console.WriteLine("  D       Simulate App in degraded mode");
 Console.WriteLine("  N       Simulate App in back to normal mode");
 Console.WriteLine("  X       Simulate an unhandled exception (terminates the process)");
@@ -208,6 +209,11 @@ while (!shutdown.IsCompleted)
         continue;
     }
 
+    if (key == ConsoleKey.T)
+    {
+        logger.Diagnostics.ImaTeapot();
+        continue;
+    }
 
     if (key == ConsoleKey.D)
     {
